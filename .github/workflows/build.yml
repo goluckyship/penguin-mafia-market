@@ -5,6 +5,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,9 +23,30 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
+        id: build
+        continue-on-error: true
+        run: mvn -B package --file pom.xml > build.log 2>&1
+
+      - name: Show tail of log always
+        if: always()
+        run: tail -n 200 build.log || true
+
+      - name: Post failure log as an issue
+        if: steps.build.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOG=$(tail -c 60000 build.log)
+          jq -n --arg body "$LOG" '{title:"Build failure log", body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
+
+      - name: Fail job if build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
 
       - name: Upload built jar
+        if: steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: PenguinMafiaMarket
