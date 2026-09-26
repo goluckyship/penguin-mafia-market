@@ -1,0 +1,19 @@
+name: PenguinMafiaMarket
+version: 1.0.0
+main: net.penguinmafia.market.PenguinMafiaMarket
+api-version: '1.21'
+author: PenguinMafia
+description: Player-run Black Market with a real /bm GUI and Frozen Coin currency.
+
+commands:
+  bm:
+    description: Open or manage the Penguin Mafia Black Market.
+    usage: |
+      /bm - open the market
+      /bm sell <price> - list the item in your hand
+      /bm list - see your own listings
+      /bm cancel <id> - cancel one of your listings
+      /bm balance - check your Frozen Coin balance
+      /bm deposit - deposit held Frozen Coin items into your balance
+      /bm withdraw <amount> - withdraw balance as physical Frozen Coin items
+    aliases: [blackmarket, market]
