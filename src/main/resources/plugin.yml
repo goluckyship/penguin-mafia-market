@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.1.0
+version: 1.2.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -24,3 +24,9 @@ commands:
       /coins <player> <amount> - add/remove coins for another player
     permission: penguinmafia.coins
     permission-message: Only ops can use /coins.
+  bal:
+    description: Check your own or another player's Frozen Coin balance.
+    usage: |
+      /bal - your own balance
+      /bal <player> - another player's balance (not private info)
+    aliases: [balance]
