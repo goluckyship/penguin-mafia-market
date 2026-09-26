@@ -1,0 +1,49 @@
+name: Generate Vanilla Reports
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  reports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Find and download matching Paper server jar
+        run: |
+          set +e
+          {
+            echo "=== checking new downloads-service docs ==="
+            curl -sS "https://docs.papermc.io/misc/downloads-service/" -o docs.html
+            echo "docs page saved, size:"
+            wc -c docs.html
+
+            echo "=== trying fill3 API guesses ==="
+            curl -sS "https://fill.papermc.io/v3/projects/paper" -o fill-paper.json
+            cat fill-paper.json | head -c 2000
+            echo ""
+            echo "=== trying builds endpoint ==="
+            curl -sS "https://fill.papermc.io/v3/projects/paper/versions/26.2/builds" -o fill-builds.json
+            cat fill-builds.json | head -c 3000
+          } > discover.log 2>&1
+          cat discover.log
+
+      - name: Post discovery log as an issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOG=$(tail -c 50000 discover.log)
+          jq -n --arg body "$LOG" '{title:"Paper download API discovery", body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
