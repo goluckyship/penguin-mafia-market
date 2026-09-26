@@ -82,7 +82,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.RED + "Hold the item you want to sell in your main hand first.");
             return true;
         }
-        if (Economy.isCoinItem(hand)) {
+        if (economy.isCoinItem(hand)) {
             player.sendMessage(ChatColor.RED + "You can't list Frozen Coins themselves - use /bm deposit instead.");
             return true;
         }
@@ -143,7 +143,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
             ItemStack item = contents[i];
-            if (Economy.isCoinItem(item)) {
+            if (economy.isCoinItem(item)) {
                 total += item.getAmount();
                 player.getInventory().setItem(i, null);
             }
@@ -181,7 +181,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         int remaining = (int) amount;
         while (remaining > 0) {
             int stack = Math.min(remaining, 64);
-            player.getInventory().addItem(Economy.coinItem(stack));
+            player.getInventory().addItem(economy.coinItem(stack));
             remaining -= stack;
         }
         player.sendMessage(ChatColor.AQUA + "Withdrew " + amount + " Frozen Coins as physical items.");
