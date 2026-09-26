@@ -203,7 +203,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         String name = item.hasItemMeta() && item.getItemMeta().hasDisplayName()
                 ? item.getItemMeta().getDisplayName()
                 : item.getType().toString().toLowerCase().replace('_', ' ');
-        return ChatColor.WHITE + item.getAmount() + "x " + name;
+        return ChatColor.WHITE.toString() + item.getAmount() + "x " + name;
     }
 
     @Override

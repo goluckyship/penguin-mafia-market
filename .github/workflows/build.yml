@@ -22,45 +22,22 @@ jobs:
           java-version: '25'
           cache: maven
 
-      - name: Build and inspect
+      - name: Build with Maven
         id: build
         continue-on-error: true
-        run: |
-          set +e
-          {
-            echo "=== mvn package ==="
-            mvn -B package --file pom.xml
-            echo "PACKAGE_EXIT_CODE=$?"
+        run: mvn -B package --file pom.xml > build.log 2>&1
 
-            echo "=== dependency tree ==="
-            mvn -B dependency:tree --file pom.xml
-
-            JAR=$(find ~/.m2 -iname "paper-api*.jar" ! -iname "*sources*" ! -iname "*javadoc*" | head -n 1)
-            echo "=== resolved jar: $JAR ==="
-
-            echo "=== does it contain the specific classes we need? ==="
-            unzip -l "$JAR" | grep -F "org/bukkit/entity/Player.class"
-            unzip -l "$JAR" | grep -F "org/bukkit/ChatColor.class"
-            unzip -l "$JAR" | grep -F "org/bukkit/plugin/java/JavaPlugin.class"
-            unzip -l "$JAR" | grep -F "org/bukkit/Bukkit.class"
-            echo "=== total org/bukkit/ entries ==="
-            unzip -l "$JAR" | grep -c "org/bukkit/"
-            echo "=== sample of org/bukkit top-level dirs ==="
-            unzip -l "$JAR" | grep -oE "org/bukkit/[a-zA-Z_]+/" | sort -u | head -n 40
-          } > full.log 2>&1
-          tail -n 100 full.log
-          test -f target/PenguinMafiaMarket.jar
-
-      - name: Post log as an issue
+      - name: Show tail of log
         if: always()
+        run: tail -n 150 build.log || true
+
+      - name: Post failure log as an issue
+        if: steps.build.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXITCODE=$(grep "PACKAGE_EXIT_CODE" full.log || echo "not found")
-          ERRORS=$(grep -A 3 "\[ERROR\]" full.log | head -c 40000 || echo "no [ERROR] lines found")
-          TAIL=$(tail -c 8000 full.log)
-          jq -n --arg exitcode "$EXITCODE" --arg errors "$ERRORS" --arg tail "$TAIL" --arg outcome "${{ steps.build.outcome }}" \
-            '{title:("Build log (" + $outcome + ")"), body: ("Exit code line:\n```\n" + $exitcode + "\n```\n\n[ERROR] lines:\n```\n" + $errors + "\n```\n\nEnd of log:\n```\n" + $tail + "\n```")}' > /tmp/issue.json
+          ERRORS=$(grep -A 3 "\[ERROR\]" build.log | head -c 40000 || echo "no [ERROR] lines found")
+          jq -n --arg errors "$ERRORS" '{title:"Build failure log", body: ("```\n" + $errors + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
 
