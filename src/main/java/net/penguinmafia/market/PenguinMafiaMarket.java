@@ -6,6 +6,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
     private Economy economy;
     private MarketManager marketManager;
+    private AnnouncementManager announcementManager;
 
     @Override
     public void onEnable() {
@@ -31,6 +32,11 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
         getCommand("coinflip").setExecutor(new CoinflipCommand(economy));
 
+        this.announcementManager = new AnnouncementManager(this);
+        AnnouncementCommand announcementCommand = new AnnouncementCommand(announcementManager);
+        getCommand("pa").setExecutor(announcementCommand);
+        getCommand("pa").setTabCompleter(announcementCommand);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 
@@ -38,6 +44,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
     public void onDisable() {
         if (economy != null) economy.save();
         if (marketManager != null) marketManager.save();
+        if (announcementManager != null) announcementManager.shutdown();
     }
 
     public Economy getEconomy() {
