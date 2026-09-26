@@ -2,7 +2,7 @@
   "type": "minecraft:overworld",
   "generator": {
     "type": "minecraft:noise",
-    "settings": "minecraft:overworld",
+    "settings": "minecraft:amplified",
     "biome_source": {
       "type": "minecraft:fixed",
       "biome": "penguinmafia:frozen_wastes"

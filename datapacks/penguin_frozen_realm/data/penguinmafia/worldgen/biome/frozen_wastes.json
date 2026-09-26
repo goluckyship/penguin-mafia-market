@@ -22,7 +22,8 @@
     "liquid": []
   },
   "features": [
-    [], [], [], [], [], [], [], [], [], [], []
+    [], [], [], [], [], [], [], [], [], [],
+    ["minecraft:freeze_top_layer"]
   ],
   "creature_spawn_probability": 0.1,
   "spawners": {
