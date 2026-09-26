@@ -65,6 +65,22 @@ public class FrozenRealmCommand implements CommandExecutor {
             return summon(player, frozenRealm);
         }
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("regenerate")) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm regenerate.");
+                return true;
+            }
+            int radius = 4;
+            if (args.length > 1) {
+                try {
+                    radius = Math.max(1, Math.min(8, Integer.parseInt(args[1])));
+                } catch (NumberFormatException ignored) {
+                    // keep default
+                }
+            }
+            return regenerate(player, frozenRealm, radius);
+        }
+
         int surfaceY = frozenRealm.getHighestBlockYAt(0, 0);
         Location dest = new Location(frozenRealm, 0.5, surfaceY + 1, 0.5);
         player.teleport(dest);
@@ -140,6 +156,46 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Summoned a cabin"
                 + ChatColor.RESET + ChatColor.GRAY + " at " + blockX + ", " + surfaceY + ", " + blockZ
                 + (bridge != null ? " (and a bridge nearby)." : "."));
+        return true;
+    }
+
+    /**
+     * Op-only: wipes and regenerates the chunks around the player using
+     * the dimension's CURRENT generator settings. Needed because a
+     * datapack change to the dimension's generator (e.g. switching away
+     * from amplified noise) only affects chunks that haven't generated
+     * yet - already-explored ground (like right around spawn) keeps its
+     * old shape, and any stacked-up test cabins, until it's regenerated.
+     * This is destructive: anything built or dropped in the affected
+     * chunks is gone.
+     */
+    private boolean regenerate(Player player, World frozenRealm, int radiusChunks) {
+        if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
+            player.sendMessage(ChatColor.RED + "You need to be in the Frozen Realm to regenerate it.");
+            player.sendMessage(ChatColor.GRAY + "Use /frozenrealm to teleport in first.");
+            return true;
+        }
+
+        int centerChunkX = player.getLocation().getBlockX() >> 4;
+        int centerChunkZ = player.getLocation().getBlockZ() >> 4;
+
+        player.sendMessage(ChatColor.AQUA + "Regenerating a " + (radiusChunks * 2 + 1) + "x" + (radiusChunks * 2 + 1)
+                + " chunk area around you" + ChatColor.GRAY + " - this deletes anything built or dropped there.");
+
+        int regenerated = 0;
+        for (int dx = -radiusChunks; dx <= radiusChunks; dx++) {
+            for (int dz = -radiusChunks; dz <= radiusChunks; dz++) {
+                if (frozenRealm.regenerateChunk(centerChunkX + dx, centerChunkZ + dz)) {
+                    regenerated++;
+                }
+            }
+        }
+
+        int surfaceY = frozenRealm.getHighestBlockYAt(player.getLocation().getBlockX(), player.getLocation().getBlockZ());
+        player.teleport(new Location(frozenRealm, player.getLocation().getBlockX() + 0.5, surfaceY + 1,
+                player.getLocation().getBlockZ() + 0.5));
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Done: " + ChatColor.RESET + ChatColor.GRAY
+                + regenerated + " chunks regenerated with the current terrain settings.");
         return true;
     }
 

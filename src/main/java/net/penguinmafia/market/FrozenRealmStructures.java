@@ -180,11 +180,21 @@ public class FrozenRealmStructures implements Listener {
      * look rather than an ornate hand-built castle.
      */
     private void buildCabin(World world, int centerX, int centerZ) {
-        int baseY = world.getHighestBlockYAt(centerX, centerZ) + 1;
+        // Sample ground height a little outside the footprint, not dead
+        // centre: once a cabin exists here, the centre's "highest block" is
+        // its own roof/chimney, which would otherwise stack a rebuilt cabin
+        // (e.g. from re-running /frozenrealm summon) on top of itself.
+        int baseY = groundHeightNear(world, centerX, centerZ) + 1;
         if (baseY >= world.getMaxHeight() - 20) return; // too close to the build limit, skip
 
         int half = 3; // 7x7 footprint
         int wallHeight = 4;
+        int roofHalf = half + 1;
+
+        // Remove any earlier cabin that got stacked above this spot (e.g.
+        // from re-running /frozenrealm summon before the height-sampling
+        // fix) before placing the new one.
+        clearCabinMaterials(world, centerX, centerZ, baseY, roofHalf);
 
         // Stone foundation
         for (int dx = -half; dx <= half; dx++) {
@@ -267,10 +277,59 @@ public class FrozenRealmStructures implements Listener {
         }
     }
 
+    /**
+     * Wipes any of our own build materials out of the column range above a
+     * freshly-computed baseY, in the structure's footprint - cleans up a
+     * cabin that got stacked on top of an earlier one before the
+     * height-sampling fix, without touching real terrain (which won't be
+     * spruce/cobblestone/chest at these heights in this biome).
+     */
+    private void clearCabinMaterials(World world, int centerX, int centerZ, int baseY, int roofHalf) {
+        int fromY = baseY;
+        int toY = Math.min(world.getMaxHeight() - 1, baseY + 60);
+        for (int dx = -roofHalf - 3; dx <= roofHalf + 3; dx++) {
+            for (int dz = -roofHalf; dz <= roofHalf; dz++) {
+                for (int y = fromY; y <= toY; y++) {
+                    Block b = world.getBlockAt(centerX + dx, y, centerZ + dz);
+                    if (isCabinMaterial(b.getType())) {
+                        b.setType(Material.AIR);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isCabinMaterial(Material material) {
+        switch (material) {
+            case STONE_BRICKS:
+            case SPRUCE_LOG:
+            case SPRUCE_PLANKS:
+            case COBBLESTONE:
+            case SNOW:
+            case LIGHT_BLUE_STAINED_GLASS_PANE:
+            case CHEST:
+            case SPRUCE_FENCE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Ground height sampled just outside the structure's own footprint
+     * (10 blocks off to the side) so a structure already standing here
+     * doesn't get measured as "the terrain" on a later rebuild.
+     */
+    private int groundHeightNear(World world, int centerX, int centerZ) {
+        int a = world.getHighestBlockYAt(centerX + 10, centerZ);
+        int b = world.getHighestBlockYAt(centerX, centerZ + 10);
+        return Math.min(a, b);
+    }
+
     private void buildBridge(World world, int centerX, int centerZ) {
         int length = 16;
         int startX = centerX - length / 2;
-        int deckY = world.getHighestBlockYAt(centerX, centerZ) + 3;
+        int deckY = groundHeightNear(world, centerX, centerZ) + 3;
         if (deckY >= world.getMaxHeight() - 4) return;
 
         for (int i = 0; i < length; i++) {
