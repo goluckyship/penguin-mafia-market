@@ -38,7 +38,16 @@ jobs:
           git config user.email "bot@penguinmafia.local"
           git config user.name "Penguin Mafia Bot"
           git add tools/vanilla-reports/overworld.json
-          git diff --staged --quiet && echo "No change" || (git commit -m "Add vanilla overworld biome parameters [skip ci]" && git push)
+          if git diff --staged --quiet; then
+            echo "No change"
+          else
+            git commit -m "Add vanilla overworld biome parameters [skip ci]"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin main && break
+              echo "push attempt $i failed, retrying..."
+              sleep 5
+            done
+          fi
 
       - name: Post log as an issue if it failed
         if: steps.gen.outcome == 'failure'

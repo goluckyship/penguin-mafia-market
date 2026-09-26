@@ -60,4 +60,13 @@ jobs:
           git config user.email "bot@penguinmafia.local"
           git config user.name "Penguin Mafia Bot"
           git add dist/PenguinMafiaMarket.jar
-          git diff --staged --quiet && echo "No change to commit" || (git commit -m "Update compiled plugin jar [skip ci]" && git push)
+          if git diff --staged --quiet; then
+            echo "No change to commit"
+          else
+            git commit -m "Update compiled plugin jar [skip ci]"
+            for i in 1 2 3 4 5; do
+              git pull --rebase origin main && git push origin main && break
+              echo "push attempt $i failed, retrying..."
+              sleep 5
+            done
+          fi
