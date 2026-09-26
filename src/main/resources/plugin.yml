@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.8.0
+version: 1.9.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -61,4 +61,5 @@ commands:
     usage: |
       /frozenrealm - teleport there
       /frozenrealm back - return to the Overworld
+      /frozenrealm locate - op-only, shows the nearest cabin and bridge coordinates
     aliases: [fr, frozen]

@@ -43,11 +43,56 @@ public class FrozenRealmCommand implements CommandExecutor {
             return true;
         }
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("locate")) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm locate.");
+                return true;
+            }
+            return locate(player, frozenRealm);
+        }
+
         int surfaceY = frozenRealm.getHighestBlockYAt(0, 0);
         Location dest = new Location(frozenRealm, 0.5, surfaceY + 1, 0.5);
         player.teleport(dest);
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Welcome to the Frozen Realm."
                 + ChatColor.RESET + ChatColor.GRAY + " Use /frozenrealm back to return.");
         return true;
+    }
+
+    /**
+     * Op-only lookup: reports the nearest generated cabin and bridge to the
+     * player's current position without teleporting or building anything -
+     * just runs the same deterministic seed math the world generator uses.
+     */
+    private boolean locate(Player player, World frozenRealm) {
+        if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
+            player.sendMessage(ChatColor.RED + "You need to be in the Frozen Realm to locate anything there.");
+            player.sendMessage(ChatColor.GRAY + "Use /frozenrealm to teleport in first.");
+            return true;
+        }
+
+        int chunkX = player.getLocation().getBlockX() >> 4;
+        int chunkZ = player.getLocation().getBlockZ() >> 4;
+
+        int[] cabin = FrozenRealmStructures.nearestCabin(frozenRealm, chunkX, chunkZ);
+        int[] bridge = FrozenRealmStructures.nearestBridge(frozenRealm, chunkX, chunkZ);
+
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Nearest Frozen Realm structures:");
+        sendStructureLine(player, frozenRealm, "Cabin", cabin);
+        sendStructureLine(player, frozenRealm, "Bridge", bridge);
+        return true;
+    }
+
+    private void sendStructureLine(Player player, World world, String label, int[] chunkCoords) {
+        if (chunkCoords == null) {
+            player.sendMessage(ChatColor.GRAY + label + ": none found nearby, try again after moving further out.");
+            return;
+        }
+        int blockX = (chunkCoords[0] << 4) + 8;
+        int blockZ = (chunkCoords[1] << 4) + 8;
+        int surfaceY = world.getHighestBlockYAt(blockX, blockZ);
+        double distance = player.getLocation().distance(new Location(world, blockX, surfaceY, blockZ));
+        player.sendMessage(ChatColor.AQUA + label + ": " + ChatColor.WHITE + blockX + ", " + surfaceY + ", " + blockZ
+                + ChatColor.GRAY + " (~" + Math.round(distance) + " blocks away)");
     }
 }

@@ -96,6 +96,10 @@ public class FrozenRealmStructures implements Listener {
     private int[] gridTarget(World world, int chunkX, int chunkZ, int cellSize, int jitter, double chance, long salt) {
         int cellX = Math.floorDiv(chunkX, cellSize);
         int cellZ = Math.floorDiv(chunkZ, cellSize);
+        return gridTargetForCell(world, cellX, cellZ, cellSize, jitter, chance, salt);
+    }
+
+    private static int[] gridTargetForCell(World world, int cellX, int cellZ, int cellSize, int jitter, double chance, long salt) {
         Random cellRandom = new Random(hash(world.getSeed() ^ salt, cellX, cellZ));
         if (cellRandom.nextDouble() >= chance) return null;
 
@@ -105,7 +109,48 @@ public class FrozenRealmStructures implements Listener {
         return new int[]{cellX * cellSize + offsetX, cellZ * cellSize + offsetZ};
     }
 
-    private long hash(long seed, int x, int z) {
+    /**
+     * Searches outward from the given chunk position over a wide ring of
+     * cells and returns the chunk coordinates of the closest cabin, or null
+     * in the (statistically very unlikely) case none exists within range.
+     * Used by /frozenrealm locate - purely a lookup, doesn't build anything.
+     */
+    public static int[] nearestCabin(World world, int chunkX, int chunkZ) {
+        return nearestStructure(world, chunkX, chunkZ, CABIN_CELL_CHUNKS, CABIN_JITTER_CHUNKS, CABIN_CHANCE, CABIN_SALT);
+    }
+
+    /** Same as {@link #nearestCabin} but for the spruce bridges. */
+    public static int[] nearestBridge(World world, int chunkX, int chunkZ) {
+        return nearestStructure(world, chunkX, chunkZ, BRIDGE_CELL_CHUNKS, BRIDGE_JITTER_CHUNKS, BRIDGE_CHANCE, BRIDGE_SALT);
+    }
+
+    private static int[] nearestStructure(World world, int chunkX, int chunkZ, int cellSize, int jitter, double chance, long salt) {
+        int originCellX = Math.floorDiv(chunkX, cellSize);
+        int originCellZ = Math.floorDiv(chunkZ, cellSize);
+
+        // 4 cells out in every direction: with a 50%/40% per-cell chance this
+        // is effectively certain to contain a hit, while staying cheap (just
+        // hashing, no world access) to compute synchronously on command.
+        int searchRadius = 4;
+        int[] best = null;
+        long bestDistSq = Long.MAX_VALUE;
+        for (int dCellX = -searchRadius; dCellX <= searchRadius; dCellX++) {
+            for (int dCellZ = -searchRadius; dCellZ <= searchRadius; dCellZ++) {
+                int[] target = gridTargetForCell(world, originCellX + dCellX, originCellZ + dCellZ, cellSize, jitter, chance, salt);
+                if (target == null) continue;
+                long dx = target[0] - chunkX;
+                long dz = target[1] - chunkZ;
+                long distSq = dx * dx + dz * dz;
+                if (distSq < bestDistSq) {
+                    bestDistSq = distSq;
+                    best = target;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static long hash(long seed, int x, int z) {
         long h = seed;
         h = h * 6364136223846793005L + x;
         h = h * 6364136223846793005L + z;
