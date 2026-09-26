@@ -159,6 +159,21 @@ public class FrozenRealmStructures implements Listener {
     }
 
     /**
+     * Force-builds a cabin at a specific block position regardless of
+     * whether the chunk is "new" - used by /frozenrealm locate so ops can
+     * summon one into an already-generated area instead of only ever
+     * getting them from natural chunk generation.
+     */
+    public void forceBuildCabin(World world, int worldX, int worldZ) {
+        buildCabin(world, worldX, worldZ);
+    }
+
+    /** Same as {@link #forceBuildCabin} but for a bridge. */
+    public void forceBuildBridge(World world, int worldX, int worldZ) {
+        buildBridge(world, worldX, worldZ);
+    }
+
+    /**
      * A small alpine chalet: a stone foundation/base course, spruce log and
      * plank walls, a snow-dusted gabled roof, and a stone chimney - modest
      * and code-buildable, aimed at the "wood cabin in the snowy mountains"

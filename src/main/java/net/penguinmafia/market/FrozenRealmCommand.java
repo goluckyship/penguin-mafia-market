@@ -21,6 +21,12 @@ public class FrozenRealmCommand implements CommandExecutor {
 
     private static final NamespacedKey FROZEN_REALM_KEY = NamespacedKey.fromString("penguinmafia:frozen_realm");
 
+    private final FrozenRealmStructures structures;
+
+    public FrozenRealmCommand(FrozenRealmStructures structures) {
+        this.structures = structures;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -49,6 +55,14 @@ public class FrozenRealmCommand implements CommandExecutor {
                 return true;
             }
             return locate(player, frozenRealm);
+        }
+
+        if (args.length > 0 && args[0].equalsIgnoreCase("summon")) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm summon.");
+                return true;
+            }
+            return summon(player, frozenRealm);
         }
 
         int surfaceY = frozenRealm.getHighestBlockYAt(0, 0);
@@ -80,6 +94,52 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Nearest Frozen Realm structures:");
         sendStructureLine(player, frozenRealm, "Cabin", cabin);
         sendStructureLine(player, frozenRealm, "Bridge", bridge);
+        return true;
+    }
+
+    /**
+     * Op-only: force-builds a cabin at the nearest cabin grid slot,
+     * regardless of whether that chunk has already generated naturally
+     * (which is why /frozenrealm locate alone might point at empty terrain
+     * - the cabin only auto-builds on genuinely first-time chunk
+     * generation). Teleports the op there afterwards.
+     */
+    private boolean summon(Player player, World frozenRealm) {
+        if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
+            player.sendMessage(ChatColor.RED + "You need to be in the Frozen Realm to summon anything there.");
+            player.sendMessage(ChatColor.GRAY + "Use /frozenrealm to teleport in first.");
+            return true;
+        }
+
+        int chunkX = player.getLocation().getBlockX() >> 4;
+        int chunkZ = player.getLocation().getBlockZ() >> 4;
+
+        int[] cabin = FrozenRealmStructures.nearestCabin(frozenRealm, chunkX, chunkZ);
+        if (cabin == null) {
+            player.sendMessage(ChatColor.RED + "Couldn't find a cabin slot nearby - try again.");
+            return true;
+        }
+        int blockX = (cabin[0] << 4) + 8;
+        int blockZ = (cabin[1] << 4) + 8;
+
+        // Force the chunk (and a little buffer around it) to actually
+        // generate/load before we place blocks in it.
+        frozenRealm.getChunkAt(cabin[0], cabin[1]).load(true);
+        structures.forceBuildCabin(frozenRealm, blockX, blockZ);
+
+        int[] bridge = FrozenRealmStructures.nearestBridge(frozenRealm, chunkX, chunkZ);
+        if (bridge != null) {
+            int bridgeX = (bridge[0] << 4) + 8;
+            int bridgeZ = (bridge[1] << 4) + 8;
+            frozenRealm.getChunkAt(bridge[0], bridge[1]).load(true);
+            structures.forceBuildBridge(frozenRealm, bridgeX, bridgeZ);
+        }
+
+        int surfaceY = frozenRealm.getHighestBlockYAt(blockX, blockZ);
+        player.teleport(new Location(frozenRealm, blockX + 0.5, surfaceY + 2, blockZ + 6.5));
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Summoned a cabin"
+                + ChatColor.RESET + ChatColor.GRAY + " at " + blockX + ", " + surfaceY + ", " + blockZ
+                + (bridge != null ? " (and a bridge nearby)." : "."));
         return true;
     }
 
