@@ -95,7 +95,28 @@ public class AnnouncementManager {
         if (index >= messages.size()) index = 0;
         String raw = messages.get(index);
         index++;
+        send(raw);
+    }
 
+    /** Immediately broadcasts the next message in rotation (advancing it), ignoring on/off - for /pa test. */
+    public boolean testNext() {
+        if (messages.isEmpty()) return false;
+        if (index >= messages.size()) index = 0;
+        String raw = messages.get(index);
+        index++;
+        send(raw);
+        return true;
+    }
+
+    /** Immediately broadcasts one specific message by its 1-based /pa list number, without touching rotation - for /pa test <#>. */
+    public boolean test(int oneBasedIndex) {
+        int i = oneBasedIndex - 1;
+        if (i < 0 || i >= messages.size()) return false;
+        send(messages.get(i));
+        return true;
+    }
+
+    private void send(String raw) {
         String full = ChatColor.translateAlternateColorCodes('&', DEFAULT_PREFIX + raw);
         Matcher matcher = LINK_PATTERN.matcher(full);
 

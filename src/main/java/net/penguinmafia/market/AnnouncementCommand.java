@@ -102,6 +102,31 @@ public class AnnouncementCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(ChatColor.AQUA + "Announcements now loop every " + manager.getInterval() + " seconds.");
                 return true;
             }
+            case "test": {
+                if (args.length == 1) {
+                    boolean sent = manager.testNext();
+                    if (!sent) {
+                        sender.sendMessage(ChatColor.RED + "No announcements to test - add one with /pa add first.");
+                    } else {
+                        sender.sendMessage(ChatColor.AQUA + "Sent the next announcement in rotation.");
+                    }
+                    return true;
+                }
+                int num;
+                try {
+                    num = Integer.parseInt(args[1]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Usage: /pa test [#]");
+                    return true;
+                }
+                boolean sent = manager.test(num);
+                if (!sent) {
+                    sender.sendMessage(ChatColor.RED + "No announcement #" + num + ". Use /pa list to see numbers.");
+                } else {
+                    sender.sendMessage(ChatColor.AQUA + "Sent announcement #" + num + ".");
+                }
+                return true;
+            }
             case "on": {
                 manager.setEnabled(true);
                 sender.sendMessage(ChatColor.GREEN + "Penguin Announcements enabled.");
@@ -125,13 +150,14 @@ public class AnnouncementCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GRAY + "/pa remove <#> " + ChatColor.DARK_GRAY + "- remove a message (see /pa list for numbers)");
         sender.sendMessage(ChatColor.GRAY + "/pa list " + ChatColor.DARK_GRAY + "- show all messages and settings");
         sender.sendMessage(ChatColor.GRAY + "/pa interval <seconds> " + ChatColor.DARK_GRAY + "- change loop speed (default 300 = 5 min)");
+        sender.sendMessage(ChatColor.GRAY + "/pa test [#] " + ChatColor.DARK_GRAY + "- broadcast a message right now, no waiting for the timer");
         sender.sendMessage(ChatColor.GRAY + "/pa on|off " + ChatColor.DARK_GRAY + "- toggle the broadcaster");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("add", "remove", "list", "interval", "on", "off").stream()
+            return Arrays.asList("add", "remove", "list", "interval", "test", "on", "off").stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         }
