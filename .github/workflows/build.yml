@@ -41,15 +41,23 @@ jobs:
           {
             echo "--- dependency tree ---"
             mvn -B dependency:tree --file pom.xml 2>&1 || true
-            echo "--- jar contents (first 60 entries) ---"
-            JAR=$(find ~/.m2 -iname "paper-api*.jar" | head -n 1)
-            echo "jar: $JAR"
-            if [ -n "$JAR" ]; then
-              ls -la "$JAR"
-              unzip -l "$JAR" | head -n 60
-              echo "--- does it contain org/bukkit? ---"
-              unzip -l "$JAR" | grep -c "org/bukkit/" || true
-            fi
+            JAR=$(find ~/.m2 -iname "paper-api*.jar" ! -iname "*sources*" ! -iname "*javadoc*" | head -n 1)
+            echo "jar used: $JAR"
+            ls -la ~/.m2 -R 2>/dev/null | grep -i "paper-api" || true
+            echo "--- specific classes present? ---"
+            unzip -l "$JAR" | grep -E "org/bukkit/entity/Player.class|org/bukkit/ChatColor.class|org/bukkit/plugin/java/JavaPlugin.class|org/bukkit/Bukkit.class" || echo "NONE FOUND"
+            echo "--- javac classpath check ---"
+            find ~/.m2 -iname "paper-api*.jar" ! -iname "*sources*" ! -iname "*javadoc*"
+            echo "--- try compiling a minimal test file directly against this jar ---"
+            mkdir -p /tmp/test && cat > /tmp/test/Test.java <<'EOF'
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+public class Test extends JavaPlugin {
+  public void x(Player p) { Bukkit.getLogger(); }
+}
+EOF
+            javac -cp "$JAR" -d /tmp/test /tmp/test/Test.java 2>&1 || echo "DIRECT JAVAC FAILED"
           } > inspect.log 2>&1
 
       - name: Show tail of log always
