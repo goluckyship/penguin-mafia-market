@@ -7,6 +7,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
     private Economy economy;
     private MarketManager marketManager;
     private AnnouncementManager announcementManager;
+    private PlaytimeRewardManager playtimeRewardManager;
 
     @Override
     public void onEnable() {
@@ -37,6 +38,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("pa").setExecutor(announcementCommand);
         getCommand("pa").setTabCompleter(announcementCommand);
 
+        this.playtimeRewardManager = new PlaytimeRewardManager(this, economy);
+        getCommand("ptr").setExecutor(new PlaytimeRewardCommand(playtimeRewardManager));
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 
@@ -45,6 +49,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         if (economy != null) economy.save();
         if (marketManager != null) marketManager.save();
         if (announcementManager != null) announcementManager.shutdown();
+        if (playtimeRewardManager != null) playtimeRewardManager.shutdown();
     }
 
     public Economy getEconomy() {

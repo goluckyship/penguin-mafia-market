@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.4.2
+version: 1.5.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -48,3 +48,11 @@ commands:
       /pa test [#] - broadcast a message right now, no waiting for the timer
       /pa on|off - toggle the broadcaster
     aliases: [penguinannounce, announcements]
+  ptr:
+    description: Op-only - manage passive playtime Frozen Coin rewards (every online player gets paid periodically).
+    usage: |
+      /ptr status - show current settings
+      /ptr interval <minutes> - how often the payout fires (default 20)
+      /ptr amount <coins> - how many coins each payout gives (default 5)
+      /ptr on|off - toggle it
+    aliases: [playtimereward, coinreward]
