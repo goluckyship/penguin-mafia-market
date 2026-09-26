@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
@@ -65,6 +66,15 @@ public class MarketGUIListener implements Listener {
         } else {
             player.sendMessage(ChatColor.RED + "That listing is no longer available, or you can't afford it / it's your own listing.");
             MarketGUI.open(player, market, marketHolder.getPage()); // refresh stale view
+        }
+    }
+
+    @EventHandler
+    public void onPlace(BlockPlaceEvent event) {
+        // Frozen Coins are pure currency - never let one actually be placed as a block.
+        if (economy.isCoinItem(event.getItemInHand())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(ChatColor.RED + "Frozen Coins can't be placed - they're currency, not a block.");
         }
     }
 
