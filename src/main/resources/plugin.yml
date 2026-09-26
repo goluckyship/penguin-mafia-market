@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.9.4
+version: 1.9.5
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -63,5 +63,5 @@ commands:
       /frozenrealm back - return to the Overworld
       /frozenrealm locate - op-only, shows the nearest cabin and bridge coordinates
       /frozenrealm summon - op-only, force-builds and teleports you to a cabin/bridge right now
-      /frozenrealm regenerate [radius] - op-only, flattens the chunks around you by clearing floating islands/spikes above y=110 (default radius 4 chunks, max 8)
+      /frozenrealm regenerate [radius] - op-only, flattens the chunks around you: caps anything above y=110 and strips any floating islands at any height (default radius 4 chunks, max 8)
     aliases: [fr, frozen]

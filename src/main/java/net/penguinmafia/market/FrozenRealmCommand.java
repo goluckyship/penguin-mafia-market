@@ -170,21 +170,36 @@ public class FrozenRealmCommand implements CommandExecutor {
     private static final int FLATTEN_CEILING_Y = 110;
 
     /**
-     * Op-only: strips floating terrain (leftover amplified-generator
-     * islands/spikes, and any stacked-up test cabins) out of the chunks
-     * around the player, down to {@link #FLATTEN_CEILING_Y}.
+     * A run of at least this many consecutive air blocks under a blob of
+     * terrain means that blob is floating (disconnected from whatever is
+     * further down), not just a normal cave pocket. Amplified-generator
+     * floating islands hang tens of blocks above anything else, so this
+     * stays well clear of ordinary 1-3 block cave gaps.
+     */
+    private static final int FLOATING_GAP_BLOCKS = 5;
+
+    /**
+     * Op-only: strips floating terrain out of the chunks around the
+     * player - leftover amplified-generator islands/spikes, and any
+     * stacked-up test cabins.
      *
      * This used to call {@code World#regenerateChunk}, but that throws
      * UnsupportedOperationException on this Paper/Minecraft version (it's
      * simply not implemented there - "Not supported in this Minecraft
      * version! This is not a bug."), so a datapack generator change (e.g.
      * away from amplified noise) can't be retroactively replayed onto
-     * already-generated chunks. Manually clearing everything above a
-     * fixed ceiling gets the same practical result (no more floating
-     * islands, no more absurd peaks) without needing that API.
+     * already-generated chunks. Instead, per column: first cap anything
+     * above {@link #FLATTEN_CEILING_Y} (handles absurd single-column
+     * spikes/mountains still attached to the ground), then walk down
+     * looking for a {@link #FLOATING_GAP_BLOCKS}-or-longer run of air
+     * under a solid blob - that blob is floating with nothing supporting
+     * it, so it gets cleared too, and the scan continues below the gap in
+     * case there's more than one stacked island in the same column.
+     * Genuine continuous ground (no such gap before bedrock) is left
+     * untouched.
      *
-     * This is destructive: anything built or dropped above the ceiling in
-     * the affected chunks is gone.
+     * This is destructive: anything built or dropped in the cleared
+     * blobs is gone.
      */
     private boolean regenerate(Player player, World frozenRealm, int radiusChunks) {
         if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
@@ -198,8 +213,9 @@ public class FrozenRealmCommand implements CommandExecutor {
 
         player.sendMessage(ChatColor.AQUA + "Flattening a " + (radiusChunks * 2 + 1) + "x" + (radiusChunks * 2 + 1)
                 + " chunk area around you" + ChatColor.GRAY + " - clearing anything above y=" + FLATTEN_CEILING_Y
-                + ", including floating islands and anything built or dropped up there.");
+                + " and any floating islands, including anything built or dropped up there.");
 
+        int minY = frozenRealm.getMinHeight();
         int columnsCleared = 0;
         for (int dx = -radiusChunks; dx <= radiusChunks; dx++) {
             for (int dz = -radiusChunks; dz <= radiusChunks; dz++) {
@@ -212,14 +228,59 @@ public class FrozenRealmCommand implements CommandExecutor {
                     for (int z = 0; z < 16; z++) {
                         int worldX = baseX + x;
                         int worldZ = baseZ + z;
-                        int highest = frozenRealm.getHighestBlockYAt(worldX, worldZ);
-                        if (highest <= FLATTEN_CEILING_Y) {
-                            continue;
+                        boolean touchedColumn = false;
+                        int ceiling = frozenRealm.getHighestBlockYAt(worldX, worldZ);
+
+                        // Cap absurd single-column spikes/mountains first.
+                        if (ceiling > FLATTEN_CEILING_Y) {
+                            for (int y = FLATTEN_CEILING_Y + 1; y <= ceiling; y++) {
+                                frozenRealm.getBlockAt(worldX, y, worldZ).setType(Material.AIR, false);
+                            }
+                            ceiling = FLATTEN_CEILING_Y;
+                            touchedColumn = true;
                         }
-                        for (int y = FLATTEN_CEILING_Y + 1; y <= highest; y++) {
-                            frozenRealm.getBlockAt(worldX, y, worldZ).setType(Material.AIR, false);
+
+                        // Strip any blob(s) floating over open air below that.
+                        while (ceiling >= minY) {
+                            int top = ceiling;
+                            while (top >= minY && isAirLike(frozenRealm.getBlockAt(worldX, top, worldZ).getType())) {
+                                top--;
+                            }
+                            if (top < minY) {
+                                break;
+                            }
+
+                            int airRun = 0;
+                            int y = top;
+                            int gapBottom = Integer.MIN_VALUE;
+                            while (y >= minY) {
+                                if (isAirLike(frozenRealm.getBlockAt(worldX, y, worldZ).getType())) {
+                                    airRun++;
+                                    if (airRun >= FLOATING_GAP_BLOCKS) {
+                                        gapBottom = y;
+                                        break;
+                                    }
+                                } else {
+                                    airRun = 0;
+                                }
+                                y--;
+                            }
+
+                            if (gapBottom == Integer.MIN_VALUE) {
+                                break; // rest of the column is continuous ground - leave it
+                            }
+
+                            int blobBottom = gapBottom + airRun;
+                            for (int cy = top; cy >= blobBottom; cy--) {
+                                frozenRealm.getBlockAt(worldX, cy, worldZ).setType(Material.AIR, false);
+                            }
+                            touchedColumn = true;
+                            ceiling = gapBottom - 1;
                         }
-                        columnsCleared++;
+
+                        if (touchedColumn) {
+                            columnsCleared++;
+                        }
                     }
                 }
             }
@@ -231,6 +292,10 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Done: " + ChatColor.RESET + ChatColor.GRAY
                 + columnsCleared + " columns flattened.");
         return true;
+    }
+
+    private static boolean isAirLike(Material material) {
+        return material == Material.AIR || material == Material.CAVE_AIR || material == Material.VOID_AIR;
     }
 
     private void sendStructureLine(Player player, World world, String label, int[] chunkCoords) {
