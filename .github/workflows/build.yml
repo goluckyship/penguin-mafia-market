@@ -56,8 +56,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOG=$(tail -c 55000 full.log 2>/dev/null || echo "no log produced")
-          jq -n --arg body "$LOG" --arg outcome "${{ steps.build.outcome }}" '{title:("Build log (" + $outcome + ")"), body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
+          EXITCODE=$(grep "PACKAGE_EXIT_CODE" full.log || echo "not found")
+          ERRORS=$(grep -A 3 "\[ERROR\]" full.log | head -c 40000 || echo "no [ERROR] lines found")
+          TAIL=$(tail -c 8000 full.log)
+          jq -n --arg exitcode "$EXITCODE" --arg errors "$ERRORS" --arg tail "$TAIL" --arg outcome "${{ steps.build.outcome }}" \
+            '{title:("Build log (" + $outcome + ")"), body: ("Exit code line:\n```\n" + $exitcode + "\n```\n\n[ERROR] lines:\n```\n" + $errors + "\n```\n\nEnd of log:\n```\n" + $tail + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
 
