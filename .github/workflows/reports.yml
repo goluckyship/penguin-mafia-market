@@ -52,9 +52,7 @@ jobs:
         run: |
           {
             mkdir -p tools/vanilla-reports
-            FOUND=$(find generated -iname "overworld.json" -path "*multi_noise*" | head -n 1)
-            echo "found file: $FOUND"
-            cp "$FOUND" tools/vanilla-reports/overworld.json
+            cp generated/reports/biome_parameters/minecraft/overworld.json tools/vanilla-reports/overworld.json
             git config user.email "bot@penguinmafia.local"
             git config user.name "Penguin Mafia Bot"
             git add tools/vanilla-reports/overworld.json
