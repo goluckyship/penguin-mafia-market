@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.2.0
+version: 1.3.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -30,3 +30,10 @@ commands:
       /bal - your own balance
       /bal <player> - another player's balance (not private info)
     aliases: [balance]
+  pay:
+    description: Send some of your Frozen Coin balance to another player.
+    usage: /pay <player> <amount>
+  coinflip:
+    description: Bet Frozen Coins on a 50/50 coin flip - win doubles your bet, lose forfeits it.
+    usage: /coinflip <amount>
+    aliases: [flip, gamble]

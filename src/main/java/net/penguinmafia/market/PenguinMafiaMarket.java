@@ -25,6 +25,12 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("bal").setExecutor(balanceCommand);
         getCommand("bal").setTabCompleter(balanceCommand);
 
+        PayCommand payCommand = new PayCommand(economy);
+        getCommand("pay").setExecutor(payCommand);
+        getCommand("pay").setTabCompleter(payCommand);
+
+        getCommand("coinflip").setExecutor(new CoinflipCommand(economy));
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 
