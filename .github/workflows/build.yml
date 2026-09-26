@@ -22,56 +22,42 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: List available Paper API versions
-        run: |
-          curl -sS "https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/maven-metadata.xml" > paper-versions.xml || true
-          echo "--- release/latest tags ---"
-          grep -E "<release>|<latest>|<lastUpdated>" paper-versions.xml || true
-          echo "--- last 15 <version> entries ---"
-          grep -oE "<version>[^<]+</version>" paper-versions.xml | tail -n 15 || true
-
-      - name: Build with Maven
+      - name: Build and inspect
         id: build
         continue-on-error: true
-        run: mvn -B package --file pom.xml > build.log 2>&1
-
-      - name: Inspect resolved paper-api jar
-        if: always()
         run: |
+          set +e
           {
-            echo "--- dependency tree ---"
-            mvn -B dependency:tree --file pom.xml 2>&1 || true
+            echo "=== mvn package ==="
+            mvn -B package --file pom.xml
+            echo "PACKAGE_EXIT_CODE=$?"
+
+            echo "=== dependency tree ==="
+            mvn -B dependency:tree --file pom.xml
+
             JAR=$(find ~/.m2 -iname "paper-api*.jar" ! -iname "*sources*" ! -iname "*javadoc*" | head -n 1)
-            echo "jar used: $JAR"
-            ls -la ~/.m2 -R 2>/dev/null | grep -i "paper-api" || true
-            echo "--- specific classes present? ---"
-            unzip -l "$JAR" | grep -E "org/bukkit/entity/Player.class|org/bukkit/ChatColor.class|org/bukkit/plugin/java/JavaPlugin.class|org/bukkit/Bukkit.class" || echo "NONE FOUND"
-            echo "--- javac classpath check ---"
-            find ~/.m2 -iname "paper-api*.jar" ! -iname "*sources*" ! -iname "*javadoc*"
-            echo "--- try compiling a minimal test file directly against this jar ---"
-            mkdir -p /tmp/test && cat > /tmp/test/Test.java <<'EOF'
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
-public class Test extends JavaPlugin {
-  public void x(Player p) { Bukkit.getLogger(); }
-}
-EOF
-            javac -cp "$JAR" -d /tmp/test /tmp/test/Test.java 2>&1 || echo "DIRECT JAVAC FAILED"
-          } > inspect.log 2>&1
+            echo "=== resolved jar: $JAR ==="
 
-      - name: Show tail of log always
+            echo "=== does it contain the specific classes we need? ==="
+            unzip -l "$JAR" | grep -F "org/bukkit/entity/Player.class"
+            unzip -l "$JAR" | grep -F "org/bukkit/ChatColor.class"
+            unzip -l "$JAR" | grep -F "org/bukkit/plugin/java/JavaPlugin.class"
+            unzip -l "$JAR" | grep -F "org/bukkit/Bukkit.class"
+            echo "=== total org/bukkit/ entries ==="
+            unzip -l "$JAR" | grep -c "org/bukkit/"
+            echo "=== sample of org/bukkit top-level dirs ==="
+            unzip -l "$JAR" | grep -oE "org/bukkit/[a-zA-Z_]+/" | sort -u | head -n 40
+          } > full.log 2>&1
+          tail -n 100 full.log
+          test -f target/PenguinMafiaMarket.jar
+
+      - name: Post log as an issue
         if: always()
-        run: tail -n 200 build.log || true
-
-      - name: Post failure log as an issue
-        if: steps.build.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOG=$(tail -c 30000 build.log)
-          DEPTREE=$(tail -c 15000 inspect.log 2>/dev/null || true)
-          jq -n --arg body "$LOG" --arg deptree "$DEPTREE" '{title:"Build failure log", body: ("Dependency tree + jar inspection:\n```\n" + $deptree + "\n```\n\nBuild log:\n```\n" + $body + "\n```")}' > /tmp/issue.json
+          LOG=$(tail -c 55000 full.log 2>/dev/null || echo "no log produced")
+          jq -n --arg body "$LOG" --arg outcome "${{ steps.build.outcome }}" '{title:("Build log (" + $outcome + ")"), body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
 
