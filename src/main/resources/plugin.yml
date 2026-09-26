@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.5.2
+version: 1.6.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -56,3 +56,9 @@ commands:
       /ptr amount <coins> - how many coins each payout gives (default 5)
       /ptr on|off - toggle it
     aliases: [playtimereward, coinreward]
+  frozenrealm:
+    description: Travel to the Frozen Realm, a custom dimension with the custom Frozen Wastes biome.
+    usage: |
+      /frozenrealm - teleport there
+      /frozenrealm back - return to the Overworld
+    aliases: [fr, frozen]
