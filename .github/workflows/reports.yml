@@ -19,31 +19,33 @@ jobs:
           distribution: temurin
           java-version: '25'
 
-      - name: Find and download matching Paper server jar
+      - name: Download matching Paper server jar and generate reports
+        id: gen
+        continue-on-error: true
         run: |
-          set +e
-          {
-            echo "=== checking new downloads-service docs ==="
-            curl -sS "https://docs.papermc.io/misc/downloads-service/" -o docs.html
-            echo "docs page saved, size:"
-            wc -c docs.html
+          set -e
+          curl -sS -o paper-server.jar "https://fill-data.papermc.io/v1/objects/b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083/paper-26.2-129.jar"
+          ls -la paper-server.jar
+          java -DbundlerMainClass=net.minecraft.data.Main -jar paper-server.jar --reports > reports.log 2>&1
+          find generated -iname "overworld.json" -path "*multi_noise*"
 
-            echo "=== trying fill3 API guesses ==="
-            curl -sS "https://fill.papermc.io/v3/projects/paper" -o fill-paper.json
-            cat fill-paper.json | head -c 2000
-            echo ""
-            echo "=== trying builds endpoint ==="
-            curl -sS "https://fill.papermc.io/v3/projects/paper/versions/26.2/builds" -o fill-builds.json
-            cat fill-builds.json | head -c 3000
-          } > discover.log 2>&1
-          cat discover.log
+      - name: Commit generated overworld biome parameters
+        if: steps.gen.outcome == 'success'
+        run: |
+          mkdir -p tools/vanilla-reports
+          FOUND=$(find generated -iname "overworld.json" -path "*multi_noise*" | head -n 1)
+          cp "$FOUND" tools/vanilla-reports/overworld.json
+          git config user.email "bot@penguinmafia.local"
+          git config user.name "Penguin Mafia Bot"
+          git add tools/vanilla-reports/overworld.json
+          git diff --staged --quiet && echo "No change" || (git commit -m "Add vanilla overworld biome parameters [skip ci]" && git push)
 
-      - name: Post discovery log as an issue
-        if: always()
+      - name: Post log as an issue if it failed
+        if: steps.gen.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOG=$(tail -c 50000 discover.log)
-          jq -n --arg body "$LOG" '{title:"Paper download API discovery", body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
+          LOG=$(tail -c 50000 reports.log 2>/dev/null || echo "no log")
+          jq -n --arg body "$LOG" '{title:"Reports generation failed", body: ("```\n" + $body + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
