@@ -27,7 +27,24 @@ jobs:
           curl -sS -o paper-server.jar "https://fill-data.papermc.io/v1/objects/b1d8f6bfa1b6101fa8e947b53041cb3bdf5540e7b83b6547ca19ba7edefeb083/paper-26.2-129.jar"
           ls -la paper-server.jar
           java -DbundlerMainClass=net.minecraft.data.Main -jar paper-server.jar --reports > reports.log 2>&1
-          find generated -iname "overworld.json" -path "*multi_noise*"
+          echo "=== full generated/ tree ==="
+          find generated -type f | sort > generated-tree.txt
+          wc -l generated-tree.txt
+          echo "=== anything with 'biome' in the name ==="
+          grep -i "biome" generated-tree.txt || echo "nothing matched biome"
+          echo "=== anything with 'noise' in the name ==="
+          grep -i "noise" generated-tree.txt || echo "nothing matched noise"
+
+      - name: Post gen output as an issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TREE=$(head -c 5000 generated-tree.txt 2>/dev/null || echo "no tree file")
+          RLOG=$(tail -c 20000 reports.log 2>/dev/null || echo "no reports.log")
+          jq -n --arg tree "$TREE" --arg rlog "$RLOG" '{title:"Reports gen output", body: ("Generated tree (first 5000 chars):\n```\n" + $tree + "\n```\n\nreports.log tail:\n```\n" + $rlog + "\n```")}' > /tmp/gen-issue.json
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/gen-issue.json
 
       - name: Commit generated overworld biome parameters
         id: commit
