@@ -17,10 +17,7 @@
       "offset": 2.0
     }
   },
-  "carvers": {
-    "air": [],
-    "liquid": []
-  },
+  "carvers": [],
   "features": [
     [], [], [], [], [], [], [], [], [], [],
     ["minecraft:freeze_top_layer"]
