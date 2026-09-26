@@ -41,11 +41,13 @@ on the server, so keep them separate when you deploy.
 - Frozen Coin currency drops
 - A "Penguin Mafia" advancement tab
 
-**Still outstanding:** the biomes won't generate into brand-new terrain
-until the overworld's noise-parameter file is patched to include them.
-That needs a file pulled straight from this server's own vanilla
-generator (see the project's earlier notes) — everything else works
-immediately once installed.
+The biomes are fully wired into overworld generation: `mafia_tundra`
+replaces every `snowy_plains` slot and `mafia_peaks` replaces every
+`jagged_peaks` slot in the vanilla noise-parameter table (pulled from
+Paper build 26.2-129's own data generator), so they'll generate in any
+newly-explored chunk automatically — no further setup needed. Existing
+chunks are never touched (Minecraft only ever generates a chunk's biome
+once, the first time it's created).
 
 ## Plugin — what it adds
 
@@ -82,5 +84,3 @@ no manual compiling needed for future changes, just push and pull.
 - No listing expiration — items stay listed until bought or cancelled.
 - No search/filter in the GUI past the first couple of pages (currently
   paginated 45-per-page with Next/Previous arrows).
-- Biome world-gen wiring still needs the vanilla parameter file (see
-  above).
