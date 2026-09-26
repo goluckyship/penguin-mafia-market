@@ -233,7 +233,6 @@ public class FrozenRealmStructures implements Listener {
 
         // Gabled, snow-capped roof: a ridge running north-south, peak over centre X
         int roofBaseY = baseY + wallHeight;
-        int roofHalf = half + 1; // slight overhang past the walls
         for (int dx = -roofHalf; dx <= roofHalf; dx++) {
             int clampedDx = Math.max(-half, Math.min(half, dx));
             int ridgeHeight = half - Math.abs(clampedDx);
