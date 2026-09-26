@@ -25,8 +25,12 @@ jobs:
       - name: List available Paper API versions
         run: |
           curl -sS "https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/maven-metadata.xml" > paper-versions.xml || true
-          echo "--- Paper API versions ---"
-          cat paper-versions.xml || true
+          curl -sS "https://api.papermc.io/v2/projects/paper" > paper-project-v2.json || true
+          curl -sS "https://api.papermc.io/v3/projects/paper" > paper-project-v3.json || true
+          echo "--- v2 project info ---"
+          cat paper-project-v2.json || true
+          echo "--- v3 project info ---"
+          cat paper-project-v3.json || true
 
       - name: Build with Maven
         id: build
@@ -42,9 +46,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOG=$(tail -c 55000 build.log)
-          VERSIONS=$(cat paper-versions.xml 2>/dev/null | tail -c 4000)
-          jq -n --arg body "$LOG" --arg versions "$VERSIONS" '{title:"Build failure log", body: ("Available Paper API versions:\n```\n" + $versions + "\n```\n\nBuild log:\n```\n" + $body + "\n```")}' > /tmp/issue.json
+          LOG=$(tail -c 40000 build.log)
+          V2=$(cat paper-project-v2.json 2>/dev/null | head -c 3000)
+          V3=$(cat paper-project-v3.json 2>/dev/null | head -c 3000)
+          jq -n --arg body "$LOG" --arg v2 "$V2" --arg v3 "$V3" '{title:"Build failure log", body: ("Paper v2 project info:\n```\n" + $v2 + "\n```\n\nPaper v3 project info:\n```\n" + $v3 + "\n```\n\nBuild log:\n```\n" + $body + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
 
