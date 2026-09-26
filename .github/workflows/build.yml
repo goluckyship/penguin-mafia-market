@@ -35,6 +35,23 @@ jobs:
         continue-on-error: true
         run: mvn -B package --file pom.xml > build.log 2>&1
 
+      - name: Inspect resolved paper-api jar
+        if: always()
+        run: |
+          {
+            echo "--- dependency tree ---"
+            mvn -B dependency:tree --file pom.xml 2>&1 || true
+            echo "--- jar contents (first 60 entries) ---"
+            JAR=$(find ~/.m2 -iname "paper-api*.jar" | head -n 1)
+            echo "jar: $JAR"
+            if [ -n "$JAR" ]; then
+              ls -la "$JAR"
+              unzip -l "$JAR" | head -n 60
+              echo "--- does it contain org/bukkit? ---"
+              unzip -l "$JAR" | grep -c "org/bukkit/" || true
+            fi
+          } > inspect.log 2>&1
+
       - name: Show tail of log always
         if: always()
         run: tail -n 200 build.log || true
@@ -44,10 +61,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LOG=$(tail -c 40000 build.log)
-          RELEASE_TAGS=$(grep -E "<release>|<latest>|<lastUpdated>" paper-versions.xml || true)
-          LAST_VERSIONS=$(grep -oE "<version>[^<]+</version>" paper-versions.xml | tail -n 15 || true)
-          jq -n --arg body "$LOG" --arg tags "$RELEASE_TAGS" --arg vers "$LAST_VERSIONS" '{title:"Build failure log", body: ("Release/latest tags:\n```\n" + $tags + "\n```\n\nLast 15 versions:\n```\n" + $vers + "\n```\n\nBuild log:\n```\n" + $body + "\n```")}' > /tmp/issue.json
+          LOG=$(tail -c 30000 build.log)
+          DEPTREE=$(tail -c 15000 inspect.log 2>/dev/null || true)
+          jq -n --arg body "$LOG" --arg deptree "$DEPTREE" '{title:"Build failure log", body: ("Dependency tree + jar inspection:\n```\n" + $deptree + "\n```\n\nBuild log:\n```\n" + $body + "\n```")}' > /tmp/issue.json
           curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue.json
 
