@@ -3,6 +3,7 @@ package net.penguinmafia.market;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -160,14 +161,30 @@ public class FrozenRealmCommand implements CommandExecutor {
     }
 
     /**
-     * Op-only: wipes and regenerates the chunks around the player using
-     * the dimension's CURRENT generator settings. Needed because a
-     * datapack change to the dimension's generator (e.g. switching away
-     * from amplified noise) only affects chunks that haven't generated
-     * yet - already-explored ground (like right around spawn) keeps its
-     * old shape, and any stacked-up test cabins, until it's regenerated.
-     * This is destructive: anything built or dropped in the affected
-     * chunks is gone.
+     * The ceiling used by {@link #regenerate}: any block above this Y in
+     * the affected columns gets cleared to air. Chosen well above normal
+     * overworld-noise ground level (sea level 63) so it only strips
+     * leftover amplified-generator floating islands/spikes, not normal
+     * terrain.
+     */
+    private static final int FLATTEN_CEILING_Y = 110;
+
+    /**
+     * Op-only: strips floating terrain (leftover amplified-generator
+     * islands/spikes, and any stacked-up test cabins) out of the chunks
+     * around the player, down to {@link #FLATTEN_CEILING_Y}.
+     *
+     * This used to call {@code World#regenerateChunk}, but that throws
+     * UnsupportedOperationException on this Paper/Minecraft version (it's
+     * simply not implemented there - "Not supported in this Minecraft
+     * version! This is not a bug."), so a datapack generator change (e.g.
+     * away from amplified noise) can't be retroactively replayed onto
+     * already-generated chunks. Manually clearing everything above a
+     * fixed ceiling gets the same practical result (no more floating
+     * islands, no more absurd peaks) without needing that API.
+     *
+     * This is destructive: anything built or dropped above the ceiling in
+     * the affected chunks is gone.
      */
     private boolean regenerate(Player player, World frozenRealm, int radiusChunks) {
         if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
@@ -179,14 +196,31 @@ public class FrozenRealmCommand implements CommandExecutor {
         int centerChunkX = player.getLocation().getBlockX() >> 4;
         int centerChunkZ = player.getLocation().getBlockZ() >> 4;
 
-        player.sendMessage(ChatColor.AQUA + "Regenerating a " + (radiusChunks * 2 + 1) + "x" + (radiusChunks * 2 + 1)
-                + " chunk area around you" + ChatColor.GRAY + " - this deletes anything built or dropped there.");
+        player.sendMessage(ChatColor.AQUA + "Flattening a " + (radiusChunks * 2 + 1) + "x" + (radiusChunks * 2 + 1)
+                + " chunk area around you" + ChatColor.GRAY + " - clearing anything above y=" + FLATTEN_CEILING_Y
+                + ", including floating islands and anything built or dropped up there.");
 
-        int regenerated = 0;
+        int columnsCleared = 0;
         for (int dx = -radiusChunks; dx <= radiusChunks; dx++) {
             for (int dz = -radiusChunks; dz <= radiusChunks; dz++) {
-                if (frozenRealm.regenerateChunk(centerChunkX + dx, centerChunkZ + dz)) {
-                    regenerated++;
+                int chunkX = centerChunkX + dx;
+                int chunkZ = centerChunkZ + dz;
+                frozenRealm.getChunkAt(chunkX, chunkZ).load(true);
+                int baseX = chunkX << 4;
+                int baseZ = chunkZ << 4;
+                for (int x = 0; x < 16; x++) {
+                    for (int z = 0; z < 16; z++) {
+                        int worldX = baseX + x;
+                        int worldZ = baseZ + z;
+                        int highest = frozenRealm.getHighestBlockYAt(worldX, worldZ);
+                        if (highest <= FLATTEN_CEILING_Y) {
+                            continue;
+                        }
+                        for (int y = FLATTEN_CEILING_Y + 1; y <= highest; y++) {
+                            frozenRealm.getBlockAt(worldX, y, worldZ).setType(Material.AIR, false);
+                        }
+                        columnsCleared++;
+                    }
                 }
             }
         }
@@ -195,7 +229,7 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.teleport(new Location(frozenRealm, player.getLocation().getBlockX() + 0.5, surfaceY + 1,
                 player.getLocation().getBlockZ() + 0.5));
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Done: " + ChatColor.RESET + ChatColor.GRAY
-                + regenerated + " chunks regenerated with the current terrain settings.");
+                + columnsCleared + " columns flattened.");
         return true;
     }
 
