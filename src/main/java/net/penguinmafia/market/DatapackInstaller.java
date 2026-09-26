@@ -33,6 +33,7 @@ public class DatapackInstaller {
         "data/minecraft/tags/function/load.json",
         "data/minecraft/tags/function/tick.json",
         "data/minecraft/tags/worldgen/biome/is_overworld.json",
+        "data/minecraft/worldgen/multi_noise_biome_source_parameter_list/overworld.json",
         "data/penguin_mafia/advancement/looted_cabin.json",
         "data/penguin_mafia/advancement/meet_the_don.json",
         "data/penguin_mafia/advancement/reached_peaks.json",
@@ -79,19 +80,10 @@ public class DatapackInstaller {
 
     // Files a previous version of this plugin installed that are no longer
     // part of the pack and must be actively deleted on upgrade - otherwise
-    // they'd keep sitting in world/datapacks/penguin_mafia and, in this
-    // case, keep crashing the server on every boot even after the plugin
-    // itself is updated.
+    // they'd keep sitting in world/datapacks/penguin_mafia even after the
+    // plugin itself is updated (bumping the version alone only adds/updates
+    // files still in FILES, it doesn't clean up ones that were removed).
     private static final String[] REMOVED_FILES = {
-        // Overriding this vanilla registry file turned out to need a
-        // different JSON shape on this server's Minecraft version than the
-        // full biome/parameter dump we shipped in 1.0.0-1.0.1 used; rather
-        // than guess at that schema again, we just stop overriding it, so
-        // overworld generation falls back to vanilla defaults. The custom
-        // biomes are still registered (see worldgen/biome/*.json) and still
-        // usable by anything that references them directly (structures,
-        // commands); they just won't appear from natural terrain generation.
-        "data/minecraft/worldgen/multi_noise_biome_source_parameter_list/overworld.json",
     };
 
     /**
