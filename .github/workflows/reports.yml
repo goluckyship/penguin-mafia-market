@@ -30,24 +30,40 @@ jobs:
           find generated -iname "overworld.json" -path "*multi_noise*"
 
       - name: Commit generated overworld biome parameters
+        id: commit
         if: steps.gen.outcome == 'success'
         run: |
-          mkdir -p tools/vanilla-reports
-          FOUND=$(find generated -iname "overworld.json" -path "*multi_noise*" | head -n 1)
-          cp "$FOUND" tools/vanilla-reports/overworld.json
-          git config user.email "bot@penguinmafia.local"
-          git config user.name "Penguin Mafia Bot"
-          git add tools/vanilla-reports/overworld.json
-          if git diff --staged --quiet; then
-            echo "No change"
-          else
-            git commit -m "Add vanilla overworld biome parameters [skip ci]"
-            for i in 1 2 3 4 5; do
-              git pull --rebase origin main && git push origin main && break
-              echo "push attempt $i failed, retrying..."
-              sleep 5
-            done
-          fi
+          {
+            mkdir -p tools/vanilla-reports
+            FOUND=$(find generated -iname "overworld.json" -path "*multi_noise*" | head -n 1)
+            echo "found file: $FOUND"
+            cp "$FOUND" tools/vanilla-reports/overworld.json
+            git config user.email "bot@penguinmafia.local"
+            git config user.name "Penguin Mafia Bot"
+            git add tools/vanilla-reports/overworld.json
+            git status
+            if git diff --staged --quiet; then
+              echo "No change"
+            else
+              git commit -m "Add vanilla overworld biome parameters [skip ci]"
+              for i in 1 2 3 4 5; do
+                git pull --rebase origin main && git push origin main && break
+                echo "push attempt $i failed, retrying..."
+                sleep 5
+              done
+            fi
+          } > commit.log 2>&1
+          cat commit.log
+
+      - name: Post commit log as an issue always
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LOG=$(tail -c 30000 commit.log 2>/dev/null || echo "no commit.log produced")
+          jq -n --arg body "$LOG" '{title:"Reports commit log", body: ("```\n" + $body + "\n```")}' > /tmp/issue2.json
+          curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues -d @/tmp/issue2.json
 
       - name: Post log as an issue if it failed
         if: steps.gen.outcome == 'failure'
