@@ -10,7 +10,9 @@
     "grass_color": 9440701,
     "foliage_color": 9440701,
     "particle": {
-      "options": { "type": "minecraft:end_rod" },
+      "options": {
+        "type": "minecraft:end_rod"
+      },
       "probability": 0.02
     },
     "mood_sound": {
@@ -22,8 +24,18 @@
   },
   "spawners": {
     "creature": [
-      { "type": "minecraft:fox", "weight": 8, "minCount": 1, "maxCount": 2 },
-      { "type": "minecraft:wolf", "weight": 6, "minCount": 1, "maxCount": 2 }
+      {
+        "type": "minecraft:fox",
+        "weight": 8,
+        "minCount": 1,
+        "maxCount": 2
+      },
+      {
+        "type": "minecraft:wolf",
+        "weight": 6,
+        "minCount": 1,
+        "maxCount": 2
+      }
     ],
     "ambient": [],
     "axolotls": [],
@@ -35,6 +47,20 @@
   },
   "spawn_costs": {},
   "features": [
-    [], [], [], [], [], [], [], [], [], [], []
-  ]
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  ],
+  "carvers": {
+    "air": [],
+    "liquid": []
+  }
 }
