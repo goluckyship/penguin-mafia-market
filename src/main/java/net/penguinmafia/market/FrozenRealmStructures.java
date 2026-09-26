@@ -14,8 +14,10 @@ import org.bukkit.inventory.Inventory;
 import java.util.Random;
 
 /**
- * Scatters small spruce cabins (each holding 300 Frozen Coins) and standalone
- * spruce bridge/platform structures across the Frozen Realm dimension.
+ * Scatters small alpine chalets (stone foundation, spruce log/plank walls, a
+ * snow-capped gabled roof, a chimney, each holding 300 Frozen Coins) and
+ * standalone spruce bridge/platform structures across the Frozen Realm
+ * dimension.
  *
  * This is deliberately plain block placement on chunk generation rather than
  * a vanilla datapack structure (jigsaw + hand-authored NBT template):
@@ -111,41 +113,77 @@ public class FrozenRealmStructures implements Listener {
         return h;
     }
 
+    /**
+     * A small alpine chalet: a stone foundation/base course, spruce log and
+     * plank walls, a snow-dusted gabled roof, and a stone chimney - modest
+     * and code-buildable, aimed at the "wood cabin in the snowy mountains"
+     * look rather than an ornate hand-built castle.
+     */
     private void buildCabin(World world, int centerX, int centerZ) {
         int baseY = world.getHighestBlockYAt(centerX, centerZ) + 1;
-        if (baseY >= world.getMaxHeight() - 8) return; // too close to the build limit, skip
+        if (baseY >= world.getMaxHeight() - 20) return; // too close to the build limit, skip
 
         int half = 3; // 7x7 footprint
+        int wallHeight = 4;
 
-        // Floor
+        // Stone foundation
         for (int dx = -half; dx <= half; dx++) {
             for (int dz = -half; dz <= half; dz++) {
-                world.getBlockAt(centerX + dx, baseY - 1, centerZ + dz).setType(Material.SPRUCE_PLANKS);
+                world.getBlockAt(centerX + dx, baseY - 1, centerZ + dz).setType(Material.STONE_BRICKS);
             }
         }
 
-        // Walls (4 tall)
-        for (int y = 0; y < 4; y++) {
+        // Walls: stone base course, spruce log corners, spruce plank fill
+        for (int y = 0; y < wallHeight; y++) {
             for (int dx = -half; dx <= half; dx++) {
                 for (int dz = -half; dz <= half; dz++) {
                     boolean edge = dx == -half || dx == half || dz == -half || dz == half;
                     if (!edge) continue;
                     boolean corner = (dx == -half || dx == half) && (dz == -half || dz == half);
-                    Material mat = corner ? Material.SPRUCE_LOG : Material.SPRUCE_PLANKS;
+                    Material mat;
+                    if (y == 0) {
+                        mat = Material.STONE_BRICKS;
+                    } else if (corner) {
+                        mat = Material.SPRUCE_LOG;
+                    } else {
+                        mat = Material.SPRUCE_PLANKS;
+                    }
                     world.getBlockAt(centerX + dx, baseY + y, centerZ + dz).setType(mat);
                 }
             }
         }
 
+        // Small windows flanking the door
+        world.getBlockAt(centerX - 2, baseY + 1, centerZ + half).setType(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
+        world.getBlockAt(centerX + 2, baseY + 1, centerZ + half).setType(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
+
         // Doorway on the south wall
         world.getBlockAt(centerX, baseY, centerZ + half).setType(Material.AIR);
         world.getBlockAt(centerX, baseY + 1, centerZ + half).setType(Material.AIR);
 
-        // Flat overhanging roof
-        for (int dx = -half - 1; dx <= half + 1; dx++) {
-            for (int dz = -half - 1; dz <= half + 1; dz++) {
-                world.getBlockAt(centerX + dx, baseY + 4, centerZ + dz).setType(Material.SPRUCE_PLANKS);
+        // Gabled, snow-capped roof: a ridge running north-south, peak over centre X
+        int roofBaseY = baseY + wallHeight;
+        int roofHalf = half + 1; // slight overhang past the walls
+        for (int dx = -roofHalf; dx <= roofHalf; dx++) {
+            int clampedDx = Math.max(-half, Math.min(half, dx));
+            int ridgeHeight = half - Math.abs(clampedDx);
+            for (int dz = -roofHalf; dz <= roofHalf; dz++) {
+                for (int y = 0; y <= ridgeHeight; y++) {
+                    world.getBlockAt(centerX + dx, roofBaseY + y, centerZ + dz).setType(Material.SPRUCE_PLANKS);
+                }
+                Block snowSpot = world.getBlockAt(centerX + dx, roofBaseY + ridgeHeight + 1, centerZ + dz);
+                if (snowSpot.getType() == Material.AIR) {
+                    snowSpot.setType(Material.SNOW);
+                }
             }
+        }
+
+        // Stone chimney poking through the roof
+        int chimneyX = centerX + half - 1;
+        int chimneyZ = centerZ;
+        int chimneyTop = roofBaseY + half + 2;
+        for (int y = roofBaseY - 1; y <= chimneyTop; y++) {
+            world.getBlockAt(chimneyX, y, chimneyZ).setType(Material.COBBLESTONE);
         }
 
         // Chest against the back wall, filled with real Frozen Coins
