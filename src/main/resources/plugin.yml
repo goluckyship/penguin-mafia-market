@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.4.0
+version: 1.4.1
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -41,6 +41,7 @@ commands:
     description: Op-only - manage Penguin Announcements, a looping broadcast message rotation.
     usage: |
       /pa add <message> - add a message to the loop (& color codes supported)
+        Clickable link: [[display text=>https://url]]
       /pa remove <#> - remove a message (see /pa list for numbers)
       /pa list - show all messages and current settings
       /pa interval <seconds> - change loop speed (default 300 = 5 min)

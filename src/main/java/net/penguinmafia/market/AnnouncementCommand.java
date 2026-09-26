@@ -121,6 +121,7 @@ public class AnnouncementCommand implements CommandExecutor, TabCompleter {
     private void sendUsage(CommandSender sender) {
         sender.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Penguin Announcements");
         sender.sendMessage(ChatColor.GRAY + "/pa add <message> " + ChatColor.DARK_GRAY + "- add a message to the loop (supports & color codes)");
+        sender.sendMessage(ChatColor.GRAY + "  Clickable link: " + ChatColor.DARK_GRAY + "[[display text=>https://url]]");
         sender.sendMessage(ChatColor.GRAY + "/pa remove <#> " + ChatColor.DARK_GRAY + "- remove a message (see /pa list for numbers)");
         sender.sendMessage(ChatColor.GRAY + "/pa list " + ChatColor.DARK_GRAY + "- show all messages and settings");
         sender.sendMessage(ChatColor.GRAY + "/pa interval <seconds> " + ChatColor.DARK_GRAY + "- change loop speed (default 300 = 5 min)");
