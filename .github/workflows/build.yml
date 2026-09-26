@@ -6,7 +6,7 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
   issues: write
 
 jobs:
@@ -51,3 +51,13 @@ jobs:
         with:
           name: PenguinMafiaMarket
           path: target/PenguinMafiaMarket.jar
+
+      - name: Commit compiled jar to repo
+        if: steps.build.outcome == 'success'
+        run: |
+          mkdir -p dist
+          cp target/PenguinMafiaMarket.jar dist/PenguinMafiaMarket.jar
+          git config user.email "bot@penguinmafia.local"
+          git config user.name "Penguin Mafia Bot"
+          git add dist/PenguinMafiaMarket.jar
+          git diff --staged --quiet && echo "No change to commit" || (git commit -m "Update compiled plugin jar [skip ci]" && git push)
