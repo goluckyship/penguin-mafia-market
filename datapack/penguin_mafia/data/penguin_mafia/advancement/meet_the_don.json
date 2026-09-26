@@ -1,0 +1,12 @@
+{
+  "parent": "penguin_mafia:tame_penguin",
+  "display": {
+    "icon": { "id": "minecraft:netherite_chestplate" },
+    "title": { "text": "Meet the Don" },
+    "description": { "text": "Cross paths with the boss of the Mafia Peaks." },
+    "frame": "challenge"
+  },
+  "criteria": {
+    "impossible": { "trigger": "minecraft:impossible" }
+  }
+}

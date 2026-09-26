@@ -1,0 +1,17 @@
+{
+  "parent": "penguin_mafia:root",
+  "display": {
+    "icon": { "id": "minecraft:spruce_fence" },
+    "title": { "text": "Head for the Hills" },
+    "description": { "text": "Set foot in the Mafia Peaks." },
+    "frame": "task"
+  },
+  "criteria": {
+    "reached_peaks": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "biomes": "penguin_mafia:mafia_peaks"
+      }
+    }
+  }
+}

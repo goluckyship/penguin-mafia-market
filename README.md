@@ -1,77 +1,86 @@
-# Penguin Mafia Black Market Plugin
+# Penguin Mafia Server
 
-A real Paper plugin adding `/bm` (aliases `/blackmarket`, `/market`) with a
-clickable inventory GUI, player listings, and a Frozen Coin currency that
-matches the Frozen Coin item already used in the Penguin Mafia data pack
-(a renamed Prismarine Shard).
+Everything for the Penguin Mafia custom Minecraft server lives in this repo:
+a data pack (custom biomes, mobs, structures, loot) and a Paper plugin
+(the `/bm` Black Market command + GUI). They install to different places
+on the server, so keep them separate when you deploy.
 
-## Why this is a separate plugin, not a data pack addition
+## What's in here
 
-Vanilla data packs cannot register new slash commands or open custom
-inventory screens — those are Bukkit/Paper API features only available to
-compiled Java plugins. Everything in this folder is real, compiled-from-
-source plugin code, not a workaround.
+- **`datapack/penguin_mafia/`** — a vanilla data pack. Goes in your
+  server's `world/datapacks/` folder.
+- **`src/`, `pom.xml`, `plugin.yml`** — the Black Market plugin's Java
+  source. Compiled automatically by GitHub Actions on every push (see
+  below) into **`dist/PenguinMafiaMarket.jar`**, which goes in your
+  server's `plugins/` folder.
+- **`.github/workflows/build.yml`** — the auto-build. Every push to
+  `main` compiles the plugin fresh and commits the resulting jar to
+  `dist/PenguinMafiaMarket.jar`, so that file is always the current build
+  — just pull the repo (or download that one file) to get the latest jar.
 
-## What it does
+## Installing on your server (exaroton or any Paper server)
 
-- `/bm` — opens a chest-style GUI listing every item currently for sale,
-  who's selling it, and its price. Click an item to buy it instantly
-  (charges your balance, credits the seller, hands you the item).
-- `/bm sell <price>` — lists whatever item is in your hand.
-- `/bm list` — shows your own active listings with their IDs.
-- `/bm cancel <id>` — pulls a listing back and returns the item to you.
-- `/bm balance` — shows your Frozen Coin balance.
-- `/bm deposit` — turns physical Frozen Coin items in your inventory into
-  balance (useful after looting cabins or killing Rival Enforcers/The Don).
-- `/bm withdraw <amount>` — turns balance back into physical Frozen Coin
-  items you can carry, drop, or hand to someone directly.
+1. Copy `datapack/penguin_mafia/` (the whole folder) into `world/datapacks/`
+   on your server.
+2. Copy `dist/PenguinMafiaMarket.jar` into `plugins/` on your server.
+3. Restart the server (a new plugin needs a real restart, not just
+   `/reload`).
+
+## Data pack — what it adds
+
+- `mafia_tundra` and `mafia_peaks` custom biomes (colors, fog, particles,
+  fox/wolf/goat/polar bear spawns)
+- Chickens that wander into those biomes turn into glowing "Mafia
+  Penguin" mobs
+- Hideout Cabins (rare structure): gold-under-snow floors, loot, a
+  Black Market Fence villager inside
+- Fancy Mountain Bridges in the peaks
+- The Don (rare boss) and Rival Gang Enforcers
+- Blizzards over the peaks (cabins shelter you from them)
+- Taming penguins with bread
+- Frozen Coin currency drops
+- A "Penguin Mafia" advancement tab
+
+**Still outstanding:** the biomes won't generate into brand-new terrain
+until the overworld's noise-parameter file is patched to include them.
+That needs a file pulled straight from this server's own vanilla
+generator (see the project's earlier notes) — everything else works
+immediately once installed.
+
+## Plugin — what it adds
+
+- `/bm` (aliases `/blackmarket`, `/market`) — opens a chest-style GUI
+  listing every player's items for sale, who's selling, and the price.
+  Click to buy instantly.
+- `/bm sell <price>` — lists whatever's in your hand.
+- `/bm list` / `/bm cancel <id>` — manage your own listings.
+- `/bm balance` / `/bm deposit` / `/bm withdraw <amount>` — Frozen Coin
+  balance, convertible to/from the physical item so loot from the data
+  pack side (cabins, The Don, Rival Enforcers) feeds straight into the
+  market.
 
 Listings and balances persist across restarts (`listings.yml` and
-`economy.yml` inside the plugin's data folder).
+`economy.yml` in the plugin's data folder on the server).
 
-## Compiling it (I could not do this step myself)
+## How the auto-build works
 
-I write and package source, but I don't have permission to reach
-`repo.papermc.io` from this sandboxed environment (it's explicitly blocked
-by the proxy policy, confirmed when I tried) — that's where the Paper API
-library this plugin depends on is hosted, so `mvn package` has to run
-somewhere that isn't blocked, like your own machine or the server itself.
+Paper's plugin library isn't reachable from every environment, so
+compiling happens on GitHub's own build runners instead, which always
+have full internet access. Every push to `main` triggers
+`.github/workflows/build.yml`, which:
+1. Builds the plugin with Maven (JDK 25, matching Paper's current
+   requirement)
+2. On success, commits the fresh jar to `dist/PenguinMafiaMarket.jar`
+3. On failure, opens a GitHub Issue in this repo with the compile error
 
-You'll need:
-1. **Java 21** installed (`java -version` to check; Paper 1.21.2 requires it).
-2. **Maven** installed (`mvn -version` to check).
-3. From inside this `penguin_mafia_market` folder, run:
-   ```
-   mvn package
-   ```
-4. The compiled plugin will appear at:
-   ```
-   target/PenguinMafiaMarket.jar
-   ```
-5. Drop that `.jar` into your Paper server's `plugins/` folder and restart
-   (or `/reload` if your server allows it — a full restart is safer for a
-   brand-new plugin).
+So `dist/PenguinMafiaMarket.jar` is always the latest working build —
+no manual compiling needed for future changes, just push and pull.
 
-If you don't have Java/Maven installed locally, this also compiles fine on
-the exaroton server itself if it gives you shell/SSH access, or on any
-free online Java build environment (Replit, Gitpod, etc.) — just upload
-this whole folder and run the same `mvn package` command.
+## Known limitations / next steps
 
-## Testing checklist
-
-- [ ] `/bm` opens an empty market with no errors in console
-- [ ] Hold an item, run `/bm sell 10`, confirm it's removed from your hand
-      and appears when you `/bm` again
-- [ ] From a second account (or ask a friend), `/bm balance`, `/bm deposit`
-      some Frozen Coin items from cabin loot, then buy the listed item
-- [ ] Confirm the seller receives the coins in their balance
-- [ ] `/bm cancel <id>` returns an unsold item
-
-## Known limitations / next steps if you want them
-
-- No admin command yet to wipe a stuck listing or refund someone — easy
-  to add (`/bm admin remove <id>`) if you want it, just say so.
-- No listing expiration — items stay listed forever until bought or
-  cancelled. Can add a time limit if the market gets cluttered.
-- No search/filter in the GUI yet if listings grow past a couple pages —
-  currently just paginated 45-per-page with Next/Previous arrows.
+- No admin command yet to wipe a stuck listing or refund someone.
+- No listing expiration — items stay listed until bought or cancelled.
+- No search/filter in the GUI past the first couple of pages (currently
+  paginated 45-per-page with Next/Previous arrows).
+- Biome world-gen wiring still needs the vanilla parameter file (see
+  above).

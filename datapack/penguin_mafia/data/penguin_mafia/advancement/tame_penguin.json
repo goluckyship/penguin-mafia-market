@@ -1,0 +1,12 @@
+{
+  "parent": "penguin_mafia:root",
+  "display": {
+    "icon": { "id": "minecraft:bread" },
+    "title": { "text": "Made a Friend" },
+    "description": { "text": "Win over a Mafia Penguin with bread." },
+    "frame": "goal"
+  },
+  "criteria": {
+    "impossible": { "trigger": "minecraft:impossible" }
+  }
+}
