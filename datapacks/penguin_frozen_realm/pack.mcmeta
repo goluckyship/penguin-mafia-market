@@ -1,10 +1,6 @@
 {
   "pack": {
     "pack_format": 48,
-    "supported_formats": {
-      "min_inclusive": 15,
-      "max_inclusive": 100
-    },
     "description": "Penguin Mafia - adds the Frozen Realm, a custom dimension with the Frozen Wastes biome"
   }
 }
