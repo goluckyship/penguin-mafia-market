@@ -19,6 +19,8 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new MarketGUIListener(marketManager, economy), this);
 
+        getCommand("coins").setExecutor(new CoinsCommand(economy));
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

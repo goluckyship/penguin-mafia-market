@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.0.0
+version: 1.1.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -17,3 +17,10 @@ commands:
       /bm deposit - deposit held Frozen Coin items into your balance
       /bm withdraw <amount> - withdraw balance as physical Frozen Coin items
     aliases: [blackmarket, market]
+  coins:
+    description: Op-only - directly add or remove a player's Frozen Coin balance, no item or renaming needed.
+    usage: |
+      /coins <amount> - add (or, if negative, remove) coins for yourself
+      /coins <player> <amount> - add/remove coins for another player
+    permission: penguinmafia.coins
+    permission-message: Only ops can use /coins.

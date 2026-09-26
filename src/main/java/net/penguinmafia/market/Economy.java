@@ -1,20 +1,20 @@
 package net.penguinmafia.market;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.io.IOException;
 
 /**
  * Frozen Coins are tracked two ways, kept in sync deliberately:
- *  - a persistent per-player balance (used by the market for buying/selling)
- *  - a physical item (renamed Prismarine Shard, matching the data pack's item)
- *    that players can carry, drop, or trade the old-fashioned way.
+ *  - a persistent per-player balance (used by the market for buying/selling,
+ *    and directly adjustable by ops with /coins)
+ *  - a physical item (a plain Prismarine Shard - no renaming needed, just the
+ *    vanilla item you get from killing Guardians) that players can carry,
+ *    drop, or trade the old-fashioned way.
  * /bm deposit and /bm withdraw convert between the two.
  */
 public class Economy {
@@ -57,19 +57,16 @@ public class Economy {
         }
     }
 
-    /** The physical Frozen Coin item - matches the data pack's renamed Prismarine Shard. */
+    /**
+     * The physical Frozen Coin item - a plain, unrenamed Prismarine Shard.
+     * No renaming, no commands: any Prismarine Shard from any source (killing
+     * Guardians, /give, another player) works as a coin.
+     */
     public static ItemStack coinItem(int amount) {
-        ItemStack item = new ItemStack(Material.PRISMARINE_SHARD, amount);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.AQUA + "Frozen Coin");
-        item.setItemMeta(meta);
-        return item;
+        return new ItemStack(Material.PRISMARINE_SHARD, amount);
     }
 
     public static boolean isCoinItem(ItemStack item) {
-        if (item == null || item.getType() != Material.PRISMARINE_SHARD) return false;
-        if (!item.hasItemMeta()) return false;
-        ItemMeta meta = item.getItemMeta();
-        return meta.hasDisplayName() && ChatColor.stripColor(meta.getDisplayName()).equals("Frozen Coin");
+        return item != null && item.getType() == Material.PRISMARINE_SHARD;
     }
 }
