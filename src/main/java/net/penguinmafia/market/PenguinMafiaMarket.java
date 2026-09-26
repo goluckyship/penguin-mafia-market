@@ -2,6 +2,8 @@ package net.penguinmafia.market;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+
 public final class PenguinMafiaMarket extends JavaPlugin {
 
     private Economy economy;
@@ -41,7 +43,8 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         this.playtimeRewardManager = new PlaytimeRewardManager(this, economy);
         getCommand("ptr").setExecutor(new PlaytimeRewardCommand(playtimeRewardManager));
 
-        FrozenRealmStructures frozenRealmStructures = new FrozenRealmStructures(economy);
+        FrozenRealmStructures frozenRealmStructures = new FrozenRealmStructures(economy,
+                new File(getDataFolder(), "frozen_realm_salts.properties"));
         getCommand("frozenrealm").setExecutor(new FrozenRealmCommand(frozenRealmStructures));
         getServer().getPluginManager().registerEvents(frozenRealmStructures, this);
 

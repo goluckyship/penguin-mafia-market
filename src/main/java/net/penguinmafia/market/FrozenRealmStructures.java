@@ -11,6 +11,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.Inventory;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Properties;
 import java.util.Random;
 
 /**
@@ -42,18 +46,72 @@ public class FrozenRealmStructures implements Listener {
     private static final int CABIN_CELL_CHUNKS = 40;
     private static final int CABIN_JITTER_CHUNKS = 10; // >= (cell - jitter) = 30 chunks apart, guaranteed
     private static final double CABIN_CHANCE = 0.5;
-    private static final long CABIN_SALT = 0xC0FFEEL;
+    private static final long CABIN_SALT_DEFAULT = 0xC0FFEEL;
     private static final long CABIN_COINS = 300L;
 
     private static final int BRIDGE_CELL_CHUNKS = 24;
     private static final int BRIDGE_JITTER_CHUNKS = 12;
     private static final double BRIDGE_CHANCE = 0.4;
-    private static final long BRIDGE_SALT = 0x5B41D9EL;
+    private static final long BRIDGE_SALT_DEFAULT = 0x5B41D9EL;
 
     private final Economy economy;
+    private final File saltFile;
 
-    public FrozenRealmStructures(Economy economy) {
+    // Salts are mutable (not the static *_DEFAULT constants above) so
+    // /frozenrealm scramble can change them at runtime: XOR-ing the world
+    // seed with a different salt before hashing sends every cabin/bridge
+    // to a completely different set of grid cells, without touching the
+    // world seed itself. Persisted to saltFile so a scramble survives a
+    // restart.
+    private long cabinSalt = CABIN_SALT_DEFAULT;
+    private long bridgeSalt = BRIDGE_SALT_DEFAULT;
+
+    public FrozenRealmStructures(Economy economy, File saltFile) {
         this.economy = economy;
+        this.saltFile = saltFile;
+        loadSalts();
+    }
+
+    private void loadSalts() {
+        if (saltFile == null || !saltFile.exists()) return;
+        try (FileInputStream in = new FileInputStream(saltFile)) {
+            Properties props = new Properties();
+            props.load(in);
+            cabinSalt = Long.parseLong(props.getProperty("cabinSalt", Long.toString(cabinSalt)));
+            bridgeSalt = Long.parseLong(props.getProperty("bridgeSalt", Long.toString(bridgeSalt)));
+        } catch (Exception ignored) {
+            // Fall back to whatever was already in cabinSalt/bridgeSalt (the defaults).
+        }
+    }
+
+    private void saveSalts() {
+        if (saltFile == null) return;
+        try {
+            File parent = saltFile.getParentFile();
+            if (parent != null) parent.mkdirs();
+            Properties props = new Properties();
+            props.setProperty("cabinSalt", Long.toString(cabinSalt));
+            props.setProperty("bridgeSalt", Long.toString(bridgeSalt));
+            try (FileOutputStream out = new FileOutputStream(saltFile)) {
+                props.store(out, "Frozen Realm structure placement salts - changed by /frozenrealm scramble");
+            }
+        } catch (Exception ignored) {
+            // Worst case the scramble doesn't survive a restart; not worth crashing the command over.
+        }
+    }
+
+    /**
+     * Op-only: re-randomizes where cabins and bridges land, by picking new
+     * salts and persisting them. Only affects chunks generated from here
+     * on - it doesn't move anything already built. Combine with wiping
+     * the dimension's region files (world/dimensions/penguinmafia/frozen_realm)
+     * and restarting for a completely fresh, rescrambled layout.
+     */
+    public void scramble() {
+        Random random = new Random();
+        cabinSalt = random.nextLong();
+        bridgeSalt = random.nextLong();
+        saveSalts();
     }
 
     @EventHandler
@@ -69,7 +127,7 @@ public class FrozenRealmStructures implements Listener {
 
     private void maybeBuildCabin(World world, Chunk chunk) {
         int[] target = gridTarget(world, chunk.getX(), chunk.getZ(),
-                CABIN_CELL_CHUNKS, CABIN_JITTER_CHUNKS, CABIN_CHANCE, CABIN_SALT);
+                CABIN_CELL_CHUNKS, CABIN_JITTER_CHUNKS, CABIN_CHANCE, cabinSalt);
         if (target == null || target[0] != chunk.getX() || target[1] != chunk.getZ()) return;
 
         int worldX = (chunk.getX() << 4) + 8;
@@ -79,7 +137,7 @@ public class FrozenRealmStructures implements Listener {
 
     private void maybeBuildBridge(World world, Chunk chunk) {
         int[] target = gridTarget(world, chunk.getX(), chunk.getZ(),
-                BRIDGE_CELL_CHUNKS, BRIDGE_JITTER_CHUNKS, BRIDGE_CHANCE, BRIDGE_SALT);
+                BRIDGE_CELL_CHUNKS, BRIDGE_JITTER_CHUNKS, BRIDGE_CHANCE, bridgeSalt);
         if (target == null || target[0] != chunk.getX() || target[1] != chunk.getZ()) return;
 
         int worldX = (chunk.getX() << 4) + 8;
@@ -109,68 +167,12 @@ public class FrozenRealmStructures implements Listener {
         return new int[]{cellX * cellSize + offsetX, cellZ * cellSize + offsetZ};
     }
 
-    /**
-     * Searches outward from the given chunk position over a wide ring of
-     * cells and returns the chunk coordinates of the closest cabin, or null
-     * in the (statistically very unlikely) case none exists within range.
-     * Used by /frozenrealm locate - purely a lookup, doesn't build anything.
-     */
-    public static int[] nearestCabin(World world, int chunkX, int chunkZ) {
-        return nearestStructure(world, chunkX, chunkZ, CABIN_CELL_CHUNKS, CABIN_JITTER_CHUNKS, CABIN_CHANCE, CABIN_SALT);
-    }
-
-    /** Same as {@link #nearestCabin} but for the spruce bridges. */
-    public static int[] nearestBridge(World world, int chunkX, int chunkZ) {
-        return nearestStructure(world, chunkX, chunkZ, BRIDGE_CELL_CHUNKS, BRIDGE_JITTER_CHUNKS, BRIDGE_CHANCE, BRIDGE_SALT);
-    }
-
-    private static int[] nearestStructure(World world, int chunkX, int chunkZ, int cellSize, int jitter, double chance, long salt) {
-        int originCellX = Math.floorDiv(chunkX, cellSize);
-        int originCellZ = Math.floorDiv(chunkZ, cellSize);
-
-        // 4 cells out in every direction: with a 50%/40% per-cell chance this
-        // is effectively certain to contain a hit, while staying cheap (just
-        // hashing, no world access) to compute synchronously on command.
-        int searchRadius = 4;
-        int[] best = null;
-        long bestDistSq = Long.MAX_VALUE;
-        for (int dCellX = -searchRadius; dCellX <= searchRadius; dCellX++) {
-            for (int dCellZ = -searchRadius; dCellZ <= searchRadius; dCellZ++) {
-                int[] target = gridTargetForCell(world, originCellX + dCellX, originCellZ + dCellZ, cellSize, jitter, chance, salt);
-                if (target == null) continue;
-                long dx = target[0] - chunkX;
-                long dz = target[1] - chunkZ;
-                long distSq = dx * dx + dz * dz;
-                if (distSq < bestDistSq) {
-                    bestDistSq = distSq;
-                    best = target;
-                }
-            }
-        }
-        return best;
-    }
-
     private static long hash(long seed, int x, int z) {
         long h = seed;
         h = h * 6364136223846793005L + x;
         h = h * 6364136223846793005L + z;
         h ^= (h >>> 33);
         return h;
-    }
-
-    /**
-     * Force-builds a cabin at a specific block position regardless of
-     * whether the chunk is "new" - used by /frozenrealm locate so ops can
-     * summon one into an already-generated area instead of only ever
-     * getting them from natural chunk generation.
-     */
-    public void forceBuildCabin(World world, int worldX, int worldZ) {
-        buildCabin(world, worldX, worldZ);
-    }
-
-    /** Same as {@link #forceBuildCabin} but for a bridge. */
-    public void forceBuildBridge(World world, int worldX, int worldZ) {
-        buildBridge(world, worldX, worldZ);
     }
 
     /**
@@ -183,7 +185,7 @@ public class FrozenRealmStructures implements Listener {
         // Sample ground height a little outside the footprint, not dead
         // centre: once a cabin exists here, the centre's "highest block" is
         // its own roof/chimney, which would otherwise stack a rebuilt cabin
-        // (e.g. from re-running /frozenrealm summon) on top of itself.
+        // on top of itself if this ever runs again for the same spot.
         int baseY = groundHeightNear(world, centerX, centerZ) + 1;
         if (baseY >= world.getMaxHeight() - 20) return; // too close to the build limit, skip
 
@@ -279,9 +281,9 @@ public class FrozenRealmStructures implements Listener {
     /**
      * Wipes any of our own build materials out of the column range above a
      * freshly-computed baseY, in the structure's footprint - cleans up a
-     * cabin that got stacked on top of an earlier one before the
-     * height-sampling fix, without touching real terrain (which won't be
-     * spruce/cobblestone/chest at these heights in this biome).
+     * cabin that got stacked on top of an earlier one, without touching
+     * real terrain (which won't be spruce/cobblestone/chest at these
+     * heights in this biome).
      */
     private void clearCabinMaterials(World world, int centerX, int centerZ, int baseY, int roofHalf) {
         int fromY = baseY;
