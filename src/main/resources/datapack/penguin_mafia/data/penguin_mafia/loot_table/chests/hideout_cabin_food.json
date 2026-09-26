@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": { "min": 2, "max": 4 },
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:bread", "weight": 1, "functions": [ { "function": "minecraft:set_count", "count": { "min": 3, "max": 9 } } ] },
+        { "type": "minecraft:item", "name": "minecraft:potato", "weight": 1, "functions": [ { "function": "minecraft:set_count", "count": { "min": 3, "max": 9 } } ] }
+      ]
+    }
+  ]
+}

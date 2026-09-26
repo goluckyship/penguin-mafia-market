@@ -1,30 +1,38 @@
 # Penguin Mafia Server
 
-Everything for the Penguin Mafia custom Minecraft server lives in this repo:
-a data pack (custom biomes, mobs, structures, loot) and a Paper plugin
-(the `/bm` Black Market command + GUI). They install to different places
-on the server, so keep them separate when you deploy.
+Everything for the Penguin Mafia custom Minecraft server — custom biomes,
+mobs, structures, loot, AND the `/bm` Black Market command + GUI — ships as
+**one single file: `dist/PenguinMafiaMarket.jar`**. The data pack is bundled
+inside the plugin jar, and the plugin installs it into `world/datapacks/`
+for you automatically the first time it runs.
 
 ## What's in here
 
-- **`datapack/penguin_mafia/`** — a vanilla data pack. Goes in your
-  server's `world/datapacks/` folder.
-- **`src/`, `pom.xml`, `plugin.yml`** — the Black Market plugin's Java
-  source. Compiled automatically by GitHub Actions on every push (see
-  below) into **`dist/PenguinMafiaMarket.jar`**, which goes in your
-  server's `plugins/` folder.
-- **`.github/workflows/build.yml`** — the auto-build. Every push to
-  `main` compiles the plugin fresh and commits the resulting jar to
-  `dist/PenguinMafiaMarket.jar`, so that file is always the current build
-  — just pull the repo (or download that one file) to get the latest jar.
+- **`dist/PenguinMafiaMarket.jar`** — the only file you need to install.
+  Contains the compiled plugin AND the full data pack. Rebuilt
+  automatically by GitHub Actions on every push (see below), so this file
+  is always the current build.
+- **`src/`, `pom.xml`, `plugin.yml`** — the plugin's Java source.
+- **`datapack/penguin_mafia/`** — the data pack source (also bundled into
+  the jar at build time — kept here too so it's easy to read/edit).
+- **`.github/workflows/build.yml`** — the auto-build.
 
 ## Installing on your server (exaroton or any Paper server)
 
-1. Copy `datapack/penguin_mafia/` (the whole folder) into `world/datapacks/`
-   on your server.
-2. Copy `dist/PenguinMafiaMarket.jar` into `plugins/` on your server.
-3. Restart the server (a new plugin needs a real restart, not just
+1. Copy `dist/PenguinMafiaMarket.jar` into `plugins/` on your server.
+   That's it — nothing else to upload.
+2. Start the server (a new plugin needs a real restart, not just
    `/reload`).
+3. On this first boot, the plugin drops the bundled data pack into
+   `world/datapacks/penguin_mafia/` and logs a warning that **one more
+   restart** is needed — this is a hard Minecraft limitation (new biomes
+   and structures are only loaded when the world starts up, so they can't
+   take effect on the same boot that just installed them). Any op who
+   joins during this state also gets a chat reminder.
+4. Restart the server one more time. After that, everything — biomes,
+   mobs, structures, `/bm` — is fully active, and future updates (just
+   replacing the jar) won't need the extra restart again unless the data
+   pack itself changes.
 
 ## Data pack — what it adds
 

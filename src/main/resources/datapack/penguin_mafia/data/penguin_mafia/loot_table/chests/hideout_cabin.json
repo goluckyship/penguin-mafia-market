@@ -1,0 +1,83 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:diamond", "weight": 3, "functions": [ { "function": "minecraft:set_count", "count": { "min": 1, "max": 5 } } ] },
+        { "type": "minecraft:item", "name": "minecraft:emerald", "weight": 3, "functions": [ { "function": "minecraft:set_count", "count": { "min": 2, "max": 8 } } ] },
+        { "type": "minecraft:item", "name": "minecraft:gold_ingot", "weight": 4, "functions": [ { "function": "minecraft:set_count", "count": { "min": 2, "max": 6 } } ] }
+      ]
+    },
+    {
+      "rolls": { "min": 1, "max": 2 },
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:enchanted_book", "weight": 1, "functions": [ { "function": "minecraft:enchant_randomly" } ] },
+        { "type": "minecraft:item", "name": "minecraft:iron_sword", "weight": 1 },
+        { "type": "minecraft:item", "name": "minecraft:crossbow", "weight": 1 }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "entries": [
+        { "type": "minecraft:item", "name": "minecraft:silence_armor_trim_smithing_template", "weight": 1 },
+        { "type": "minecraft:item", "name": "minecraft:snout_armor_trim_smithing_template", "weight": 1 },
+        { "type": "minecraft:item", "name": "minecraft:wild_armor_trim_smithing_template", "weight": 1 }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:golden_apple",
+          "weight": 1,
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "min": 1, "max": 3 } },
+            { "function": "minecraft:limit_count", "limit": { "min": 0, "max": 6 } }
+          ]
+        }
+      ]
+    }
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:prismarine_shard",
+          "functions": [
+            { "function": "minecraft:set_count", "count": { "min": 3, "max": 8 } },
+            { "function": "minecraft:set_name", "name": { "text": "Frozen Coin", "color": "aqua" } }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "weight": 1,
+          "name": "minecraft:written_book",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:written_book_content": {
+                  "title": "Mafia Ledger",
+                  "author": "Unknown",
+                  "pages": [
+                    { "raw": "This cabin is one of many. The Don keeps his coin scattered across the tundra and the peaks - never all in one place.\n\nIf you're reading this, you already know too much." },
+                    { "raw": "Feed the flightless ones bread and they'll remember you. Loyalty runs deeper than feathers in this family.\n\n- P.M." }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        { "type": "minecraft:empty", "weight": 4 }
+      ]
+    }
+  ]
+}

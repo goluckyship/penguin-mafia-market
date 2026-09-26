@@ -1,0 +1,13 @@
+{
+  "display": {
+    "icon": { "id": "minecraft:gold_block" },
+    "title": { "text": "Penguin Mafia", "color": "gold" },
+    "description": { "text": "Welcome to the family." },
+    "background": "minecraft:textures/block/snow.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "tick": { "trigger": "minecraft:tick" }
+  }
+}
