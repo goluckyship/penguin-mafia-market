@@ -256,6 +256,7 @@ public class FrozenRealmStructures implements Listener {
     }
 
     private void fillChestWithCoins(Inventory inventory, long total) {
+        inventory.clear(); // in case this chest already existed (e.g. a re-summon), start fresh
         long remaining = total;
         int slot = 0;
         while (remaining > 0 && slot < inventory.getSize()) {
