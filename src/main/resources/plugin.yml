@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.14.1
+version: 1.15.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -64,3 +64,9 @@ commands:
       /frozenrealm cabin - op-only, teleport straight to the nearest cabin
       /frozenrealm scramble - op-only, re-rolls where future cabins/bridges spawn (persists across restarts; wipe the dimension's chunk data and restart for a fully fresh scrambled layout)
     aliases: [fr, frozen]
+  sandbox:
+    description: Op-only - a superflat world for testing/building, separate from the survival world.
+    usage: |
+      /sandbox - teleport there (ops only)
+      /sandbox back - return to the Overworld
+    aliases: [sb]
