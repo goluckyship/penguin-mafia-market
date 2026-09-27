@@ -58,6 +58,10 @@ public class FrozenRealmCommand implements CommandExecutor {
         }
 
         if (args.length > 0 && args[0].equalsIgnoreCase("cabin")) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm cabin.");
+                return true;
+            }
             return cabin(player, frozenRealm);
         }
 
@@ -90,9 +94,10 @@ public class FrozenRealmCommand implements CommandExecutor {
     }
 
     /**
-     * Teleports the player straight to the nearest cabin, force-generating
-     * it first if that chunk hasn't naturally loaded yet (so this always
-     * finds a real cabin, not just an already-explored one).
+     * Op-only: teleports the player straight to the nearest cabin,
+     * force-generating it first if that chunk hasn't naturally loaded yet
+     * (so this always finds a real cabin, not just an already-explored
+     * one).
      */
     private boolean cabin(Player player, World frozenRealm) {
         if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
