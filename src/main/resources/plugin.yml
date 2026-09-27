@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.12.2
+version: 1.13.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -9,10 +9,10 @@ commands:
   bm:
     description: Open or manage the Penguin Mafia Black Market.
     usage: |
-      /bm - open the market
+      /bm - open the market (search bar and price sorting built in)
       /bm sell <price> - list the item in your hand
-      /bm list - see your own listings
-      /bm cancel <id> - cancel one of your listings
+      /bm list - manage your own listings in a UI, cancel with a click
+      /bm cancel <id> - cancel one of your listings (chat-based alternative)
       /bm balance - check your Frozen Coin balance
       /bm deposit - deposit held Frozen Coin items into your balance
       /bm withdraw <amount> - withdraw balance as physical Frozen Coin items

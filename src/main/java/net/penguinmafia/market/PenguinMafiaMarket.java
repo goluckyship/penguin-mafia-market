@@ -21,7 +21,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("bm").setExecutor(command);
         getCommand("bm").setTabCompleter(command);
 
-        getServer().getPluginManager().registerEvents(new MarketGUIListener(marketManager, economy), this);
+        getServer().getPluginManager().registerEvents(new MarketGUIListener(this, marketManager, economy), this);
 
         getCommand("coins").setExecutor(new CoinsCommand(economy));
 

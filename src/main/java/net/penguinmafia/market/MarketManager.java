@@ -85,6 +85,30 @@ public class MarketManager {
         return listings.get(id);
     }
 
+    /**
+     * Returns the listings whose item name or seller name contains the query
+     * (case-insensitive). A blank or null query returns the list unchanged.
+     */
+    public static List<Listing> filter(List<Listing> all, String query) {
+        if (query == null || query.isBlank()) return all;
+        String needle = query.trim().toLowerCase();
+        List<Listing> out = new ArrayList<>();
+        for (Listing l : all) {
+            if (itemName(l.item).toLowerCase().contains(needle)
+                    || l.sellerName.toLowerCase().contains(needle)) {
+                out.add(l);
+            }
+        }
+        return out;
+    }
+
+    private static String itemName(ItemStack item) {
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            return org.bukkit.ChatColor.stripColor(item.getItemMeta().getDisplayName());
+        }
+        return item.getType().toString().toLowerCase().replace('_', ' ');
+    }
+
     /** Lists an item for sale. Caller is responsible for having already removed it from the seller's inventory. */
     public Listing createListing(Player seller, ItemStack item, long price) {
         int id = nextId++;

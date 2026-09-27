@@ -85,8 +85,9 @@ public class Economy {
         meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + "Frozen Coin");
         meta.setLore(Arrays.asList(
                 ChatColor.GRAY + "Official Penguin Mafia currency.",
-                ChatColor.DARK_GRAY + "Can't be mined, fished, or crafted -",
-                ChatColor.DARK_GRAY + "only comes from /bm withdraw."
+                ChatColor.DARK_GRAY + "Can't be mined, fished, or crafted.",
+                ChatColor.DARK_GRAY + "Get some from /bm withdraw, or by",
+                ChatColor.DARK_GRAY + "hunting Frozen Reavers in the Frozen Realm."
         ));
         meta.getPersistentDataContainer().set(coinKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);

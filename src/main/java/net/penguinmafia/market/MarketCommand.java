@@ -42,7 +42,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             case "sell":
                 return handleSell(player, args);
             case "list":
-                return handleList(player);
+                MarketGUI.openMyListings(player, market, 0);
+                return true;
             case "cancel":
                 return handleCancel(player, args);
             case "balance":
@@ -100,20 +101,6 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
                 + "Listed " + describeItem(toSell) + ChatColor.GRAY + " for " + ChatColor.AQUA
                 + price + " Frozen Coins" + ChatColor.GRAY + " (listing #" + listing.id + ").");
-        return true;
-    }
-
-    private boolean handleList(Player player) {
-        List<Listing> mine = market.getListingsBy(player.getUniqueId());
-        if (mine.isEmpty()) {
-            player.sendMessage(ChatColor.GRAY + "You have no active listings.");
-            return true;
-        }
-        player.sendMessage(ChatColor.LIGHT_PURPLE + "--- Your Black Market Listings ---");
-        for (Listing l : mine) {
-            player.sendMessage(ChatColor.GRAY + "#" + l.id + " " + describeItem(l.item)
-                    + ChatColor.GRAY + " - " + ChatColor.AQUA + l.price + " coins");
-        }
         return true;
     }
 
@@ -235,9 +222,9 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(Player player) {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "--- Penguin Mafia Black Market ---");
-        player.sendMessage(ChatColor.GRAY + "/bm " + ChatColor.WHITE + "- open the market GUI");
+        player.sendMessage(ChatColor.GRAY + "/bm " + ChatColor.WHITE + "- open the market GUI (search + sort by price built in)");
         player.sendMessage(ChatColor.GRAY + "/bm sell <price> " + ChatColor.WHITE + "- list the item in your hand");
-        player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- see your own listings");
+        player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- manage your listings (cancel with a click)");
         player.sendMessage(ChatColor.GRAY + "/bm cancel <id> " + ChatColor.WHITE + "- cancel a listing");
         player.sendMessage(ChatColor.GRAY + "/bm balance " + ChatColor.WHITE + "- check your coin balance");
         player.sendMessage(ChatColor.GRAY + "/bm deposit " + ChatColor.WHITE + "- turn held coins into balance");
