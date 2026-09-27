@@ -72,8 +72,25 @@ public class FrozenRealmMonsters implements Listener {
     public void onSpawn(CreatureSpawnEvent event) {
         World world = event.getLocation().getWorld();
         if (world == null || FROZEN_REALM_KEY == null || !FROZEN_REALM_KEY.equals(world.getKey())) return;
-        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
-        if (!(event.getEntity() instanceof Husk husk)) return;
+        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL
+                && event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.JOCKEY) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof Husk husk)) {
+            // Husks bring their own uninvited guests: vanilla can naturally
+            // pair a husk spawn with a Parched (a desert Skeleton variant)
+            // riding a Camel Husk, the same way zombies get chicken jockeys.
+            // Our biome's spawn table only lists husk, but those companions
+            // ride in "for free" outside that table entirely, uncapped and
+            // untouched by the Reaver logic below - exactly the kind of
+            // extra, unaccounted-for entity that piles up over time and
+            // drags the server down. The Frozen Realm is meant to be husk
+            // (Frozen Reaver) only, so cancel anything else that tries to
+            // spawn alongside one.
+            event.setCancelled(true);
+            return;
+        }
 
         if (countReavers(world) >= MAX_REAVERS) {
             event.setCancelled(true);
