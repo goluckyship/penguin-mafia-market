@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:overworld",
+  "type": "penguinmafia:frozen_realm_type",
   "generator": {
     "type": "minecraft:noise",
     "settings": "minecraft:overworld",
