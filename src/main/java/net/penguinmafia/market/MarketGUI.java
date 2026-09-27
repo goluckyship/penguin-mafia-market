@@ -124,7 +124,7 @@ public class MarketGUI {
         ItemStack pageIndicator = new ItemStack(Material.PAPER);
         ItemMeta pageMeta = pageIndicator.getItemMeta();
         pageMeta.setDisplayName(ChatColor.YELLOW + "Page " + (page + 1) + " / " + totalPages);
-        pageMeta.setLore(List.of(ChatColor.DARK_GRAY + shown.size() + " listing" + (shown.size() == 1 ? "" : "s")
+        pageMeta.setLore(List.of(ChatColor.DARK_GRAY + "" + shown.size() + " listing" + (shown.size() == 1 ? "" : "s")
                 + (mode == MarketHolder.Mode.BROWSE ? " for sale" : " of yours")));
         pageIndicator.setItemMeta(pageMeta);
         inv.setItem(50, pageIndicator);
