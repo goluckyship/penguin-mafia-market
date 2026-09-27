@@ -7,6 +7,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Husk;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -46,6 +47,18 @@ public class FrozenRealmMonsters implements Listener {
     private static final long MIN_COINS = 15L;
     private static final long MAX_COINS = 50L;
 
+    /**
+     * Hard cap on how many Frozen Reavers can exist in the dimension at once.
+     * Without this, a husk-only biome with nothing else competing for the
+     * mob cap just keeps stacking packs on top of each other near players
+     * (each one glowing, permanently sped up, and never despawning while
+     * someone's nearby) until the server chokes on the entity count and
+     * everything starts stuttering/rubber-banding. Once at the cap, new
+     * natural spawns in the dimension are cancelled outright until some
+     * Reavers are killed or wander off and despawn.
+     */
+    private static final int MAX_REAVERS = 24;
+
     private final Economy economy;
     private final NamespacedKey reaverKey;
     private final Random random = new Random();
@@ -62,7 +75,23 @@ public class FrozenRealmMonsters implements Listener {
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
         if (!(event.getEntity() instanceof Husk husk)) return;
 
+        if (countReavers(world) >= MAX_REAVERS) {
+            event.setCancelled(true);
+            return;
+        }
+
         makeReaver(husk);
+    }
+
+    private int countReavers(World world) {
+        int count = 0;
+        for (Entity entity : world.getEntities()) {
+            if (entity instanceof LivingEntity living
+                    && living.getPersistentDataContainer().has(reaverKey, PersistentDataType.BYTE)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void makeReaver(Husk monster) {
