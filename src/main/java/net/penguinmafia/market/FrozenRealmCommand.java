@@ -57,6 +57,10 @@ public class FrozenRealmCommand implements CommandExecutor {
             return scramble(player);
         }
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("cabin")) {
+            return cabin(player, frozenRealm);
+        }
+
         int surfaceY = frozenRealm.getHighestBlockYAt(0, 0);
         Location dest = new Location(frozenRealm, 0.5, surfaceY + 1, 0.5);
         player.teleport(dest);
@@ -82,6 +86,42 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Frozen Realm structure layout scrambled."
                 + ChatColor.RESET + ChatColor.GRAY + " Cabins and bridges in newly generated chunks will land in "
                 + "different spots. Existing chunks won't change until they're regenerated.");
+        return true;
+    }
+
+    /**
+     * Teleports the player straight to the nearest cabin, force-generating
+     * it first if that chunk hasn't naturally loaded yet (so this always
+     * finds a real cabin, not just an already-explored one).
+     */
+    private boolean cabin(Player player, World frozenRealm) {
+        if (!frozenRealm.getKey().equals(player.getWorld().getKey())) {
+            player.sendMessage(ChatColor.RED + "You need to be in the Frozen Realm to teleport to a cabin.");
+            player.sendMessage(ChatColor.GRAY + "Use /frozenrealm to teleport in first.");
+            return true;
+        }
+
+        int chunkX = player.getLocation().getBlockX() >> 4;
+        int chunkZ = player.getLocation().getBlockZ() >> 4;
+
+        int[] cabin = structures.nearestCabin(frozenRealm, chunkX, chunkZ);
+        if (cabin == null) {
+            player.sendMessage(ChatColor.RED + "Couldn't find a cabin nearby - try again.");
+            return true;
+        }
+
+        int blockX = (cabin[0] << 4) + 8;
+        int blockZ = (cabin[1] << 4) + 8;
+
+        // Force the chunk to actually generate/load, then guarantee the
+        // cabin is really there (harmless if it already built naturally).
+        frozenRealm.getChunkAt(cabin[0], cabin[1]).load(true);
+        structures.forceBuildCabin(frozenRealm, blockX, blockZ);
+
+        int surfaceY = frozenRealm.getHighestBlockYAt(blockX, blockZ);
+        player.teleport(new Location(frozenRealm, blockX + 0.5, surfaceY + 2, blockZ + 6.5));
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Teleported to a cabin"
+                + ChatColor.RESET + ChatColor.GRAY + " at " + blockX + ", " + surfaceY + ", " + blockZ + ".");
         return true;
     }
 }

@@ -114,6 +114,55 @@ public class FrozenRealmStructures implements Listener {
         saveSalts();
     }
 
+    /**
+     * Finds the nearest cabin grid slot to the given chunk coordinates,
+     * searching outward cell by cell - purely deterministic seed math, no
+     * generating or teleporting. Returns chunk coordinates, or null in the
+     * vanishingly unlikely case nothing turns up within {@code maxRadius}
+     * cells (at a 50% chance per cell that's not realistically reachable).
+     */
+    public int[] nearestCabin(World world, int chunkX, int chunkZ) {
+        return nearestStructure(world, chunkX, chunkZ, CABIN_CELL_CHUNKS, CABIN_JITTER_CHUNKS, CABIN_CHANCE, cabinSalt);
+    }
+
+    /**
+     * Force-builds a cabin at the given world coordinates right now,
+     * regardless of whether this chunk has already generated naturally -
+     * used to guarantee a cabin exists at a located slot even if that chunk
+     * happens not to have loaded for the first time yet. Caller is
+     * responsible for loading/generating the chunk first.
+     */
+    public void forceBuildCabin(World world, int worldX, int worldZ) {
+        buildCabin(world, worldX, worldZ);
+    }
+
+    private static int[] nearestStructure(World world, int chunkX, int chunkZ, int cellSize, int jitter, double chance, long salt) {
+        int originCellX = Math.floorDiv(chunkX, cellSize);
+        int originCellZ = Math.floorDiv(chunkZ, cellSize);
+
+        int[] best = null;
+        long bestDistSq = Long.MAX_VALUE;
+        int maxRadius = 8; // cells - comfortably enough given a 40-50% per-cell chance
+        for (int radius = 0; radius <= maxRadius; radius++) {
+            for (int dcx = -radius; dcx <= radius; dcx++) {
+                for (int dcz = -radius; dcz <= radius; dcz++) {
+                    if (Math.max(Math.abs(dcx), Math.abs(dcz)) != radius) continue; // only this ring
+                    int[] target = gridTargetForCell(world, originCellX + dcx, originCellZ + dcz, cellSize, jitter, chance, salt);
+                    if (target == null) continue;
+                    long dx = target[0] - chunkX;
+                    long dz = target[1] - chunkZ;
+                    long distSq = dx * dx + dz * dz;
+                    if (distSq < bestDistSq) {
+                        bestDistSq = distSq;
+                        best = target;
+                    }
+                }
+            }
+            if (best != null) return best; // nearest hit in the closest non-empty ring is close enough
+        }
+        return best;
+    }
+
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
         if (!event.isNewChunk()) return;

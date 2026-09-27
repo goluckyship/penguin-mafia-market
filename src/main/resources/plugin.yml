@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.10.1
+version: 1.11.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -61,5 +61,6 @@ commands:
     usage: |
       /frozenrealm - teleport there
       /frozenrealm back - return to the Overworld
+      /frozenrealm cabin - teleport straight to the nearest cabin
       /frozenrealm scramble - op-only, re-rolls where future cabins/bridges spawn (persists across restarts; wipe the dimension's chunk data and restart for a fully fresh scrambled layout)
     aliases: [fr, frozen]
