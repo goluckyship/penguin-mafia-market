@@ -174,18 +174,63 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.RED + "Invalid amount.");
             return true;
         }
-        if (!economy.removeBalance(player, amount)) {
+        if (amount > economy.getBalance(player)) {
             player.sendMessage(ChatColor.RED + "You don't have that many Frozen Coins in your balance.");
             return true;
         }
-        int remaining = (int) amount;
+
+        long capacity = inventoryCapacityFor(player, economy.coinItem(1));
+        if (capacity <= 0) {
+            player.sendMessage(ChatColor.RED + "Your inventory is full - free up space before withdrawing.");
+            return true;
+        }
+
+        // Never hand out more physical coins than the inventory can actually
+        // hold - addItem() silently drops (or Bukkit-drops on the ground,
+        // depending on version) whatever doesn't fit, and either way it's
+        // not honest about it, so cap the withdrawal up front instead.
+        long toWithdraw = Math.min(amount, capacity);
+        if (!economy.removeBalance(player, toWithdraw)) {
+            player.sendMessage(ChatColor.RED + "Something went wrong withdrawing your balance - try again.");
+            return true;
+        }
+
+        int remaining = (int) toWithdraw;
+        int maxStack = economy.coinItem(1).getMaxStackSize();
         while (remaining > 0) {
-            int stack = Math.min(remaining, 64);
+            int stack = Math.min(remaining, maxStack);
             player.getInventory().addItem(economy.coinItem(stack));
             remaining -= stack;
         }
-        player.sendMessage(ChatColor.AQUA + "Withdrew " + amount + " Frozen Coins as physical items.");
+
+        if (toWithdraw < amount) {
+            player.sendMessage(ChatColor.AQUA + "Withdrew " + toWithdraw + " Frozen Coins" + ChatColor.RESET
+                    + ChatColor.GRAY + " - that's all your inventory could hold right now (asked for " + amount + ").");
+        } else {
+            player.sendMessage(ChatColor.AQUA + "Withdrew " + amount + " Frozen Coins as physical items.");
+        }
         return true;
+    }
+
+    /**
+     * How many more of the sample item the player's main inventory (not
+     * armor or offhand) could actually accept right now - counting empty
+     * slots at the item's real max stack size and any room left in
+     * existing compatible partial stacks, rather than assuming a fixed
+     * 64-per-slot (some items have smaller max stacks, and existing
+     * partial stacks have less room than a full one).
+     */
+    private long inventoryCapacityFor(Player player, ItemStack sample) {
+        int maxStack = sample.getMaxStackSize();
+        long capacity = 0;
+        for (ItemStack slot : player.getInventory().getStorageContents()) {
+            if (slot == null) {
+                capacity += maxStack;
+            } else if (slot.isSimilar(sample) && slot.getAmount() < slot.getMaxStackSize()) {
+                capacity += slot.getMaxStackSize() - slot.getAmount();
+            }
+        }
+        return capacity;
     }
 
     private void sendHelp(Player player) {
