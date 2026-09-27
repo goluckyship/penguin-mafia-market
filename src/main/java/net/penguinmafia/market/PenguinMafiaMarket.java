@@ -17,11 +17,15 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         this.economy = new Economy(this);
         this.marketManager = new MarketManager(this, economy);
 
-        MarketCommand command = new MarketCommand(this, economy, marketManager);
+        MarketPreferencesManager marketPreferencesManager = new MarketPreferencesManager(this);
+        MarketGUI marketGUI = new MarketGUI(marketManager, marketPreferencesManager);
+
+        MarketCommand command = new MarketCommand(this, economy, marketManager, marketGUI);
         getCommand("bm").setExecutor(command);
         getCommand("bm").setTabCompleter(command);
 
-        getServer().getPluginManager().registerEvents(new MarketGUIListener(this, marketManager, economy), this);
+        getServer().getPluginManager().registerEvents(
+                new MarketGUIListener(this, marketManager, economy, marketGUI, marketPreferencesManager), this);
 
         getCommand("coins").setExecutor(new CoinsCommand(economy));
 

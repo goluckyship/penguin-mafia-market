@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.15.0
+version: 1.16.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -9,7 +9,7 @@ commands:
   bm:
     description: Open or manage the Penguin Mafia Black Market.
     usage: |
-      /bm - open the market (search bar and price sorting built in)
+      /bm - open the market (search, sort by price, and category filters - all remembered for you)
       /bm sell <price> - list the item in your hand
       /bm list - manage your own listings in a UI, cancel with a click
       /bm cancel <id> - cancel one of your listings (chat-based alternative)

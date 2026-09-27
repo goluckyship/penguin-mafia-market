@@ -25,14 +25,19 @@ public class MarketGUIListener implements Listener {
     private final PenguinMafiaMarket plugin;
     private final MarketManager market;
     private final Economy economy;
+    private final MarketGUI gui;
+    private final MarketPreferencesManager prefsManager;
 
     /** Players who just clicked "Search" and whose next chat line should be used as the query. */
     private final Map<UUID, Boolean> awaitingSearch = new ConcurrentHashMap<>();
 
-    public MarketGUIListener(PenguinMafiaMarket plugin, MarketManager market, Economy economy) {
+    public MarketGUIListener(PenguinMafiaMarket plugin, MarketManager market, Economy economy,
+                              MarketGUI gui, MarketPreferencesManager prefsManager) {
         this.plugin = plugin;
         this.market = market;
         this.economy = economy;
+        this.gui = gui;
+        this.prefsManager = prefsManager;
     }
 
     @EventHandler
@@ -65,9 +70,9 @@ public class MarketGUIListener implements Listener {
         }
         if (slot == 46) {
             if (marketHolder.getMode() == MarketHolder.Mode.BROWSE) {
-                MarketGUI.openMyListings(player, market, 0);
+                gui.openMyListings(player, 0);
             } else {
-                MarketGUI.open(player, market, 0);
+                gui.open(player, 0);
             }
             return;
         }
@@ -79,10 +84,24 @@ public class MarketGUIListener implements Listener {
                     + ChatColor.WHITE + "cancel" + ChatColor.GRAY + " to back out.");
             return;
         }
-        if (slot == 48 && marketHolder.getMode() == MarketHolder.Mode.BROWSE
+        if (slot == 48 && marketHolder.getMode() == MarketHolder.Mode.BROWSE && clicked.getType() == Material.HOPPER) {
+            boolean newSort = !marketHolder.isSortDescending();
+            prefsManager.setSortDescending(player, newSort);
+            gui.open(player, marketHolder.getPage(), marketHolder.getFilter(), newSort, marketHolder.getCategory());
+            return;
+        }
+        if (slot == 51 && marketHolder.getMode() == MarketHolder.Mode.BROWSE && clicked.getType() == Material.CHEST) {
+            MarketCategory current = marketHolder.getCategory() == null ? MarketCategory.ALL : marketHolder.getCategory();
+            MarketCategory next = current.next();
+            prefsManager.setCategory(player, next);
+            gui.open(player, 0, marketHolder.getFilter(), marketHolder.isSortDescending(), next);
+            return;
+        }
+        if (slot == 52 && marketHolder.getMode() == MarketHolder.Mode.BROWSE
                 && marketHolder.getFilter() != null && !marketHolder.getFilter().isBlank()
                 && clicked.getType() == Material.BARRIER) {
-            MarketGUI.open(player, market, 0);
+            prefsManager.setFilter(player, null);
+            gui.open(player, 0, null, marketHolder.isSortDescending(), marketHolder.getCategory());
             return;
         }
         if (slot >= 45) return; // remaining bottom row: info tile, page indicator, filler
@@ -98,7 +117,7 @@ public class MarketGUIListener implements Listener {
             } else {
                 player.sendMessage(ChatColor.RED + "That listing is already gone.");
             }
-            MarketGUI.openMyListings(player, market, marketHolder.getPage());
+            gui.openMyListings(player, marketHolder.getPage());
             return;
         }
 
@@ -108,14 +127,14 @@ public class MarketGUIListener implements Listener {
         } else {
             player.sendMessage(ChatColor.RED + "That listing is no longer available, or you can't afford it / it's your own listing.");
         }
-        MarketGUI.open(player, market, marketHolder.getPage(), marketHolder.getFilter());
+        gui.open(player, marketHolder.getPage(), marketHolder.getFilter(), marketHolder.isSortDescending(), marketHolder.getCategory());
     }
 
     private void reopen(Player player, MarketHolder holder, int page) {
         if (holder.getMode() == MarketHolder.Mode.MY_LISTINGS) {
-            MarketGUI.openMyListings(player, market, page);
+            gui.openMyListings(player, page);
         } else {
-            MarketGUI.open(player, market, page, holder.getFilter());
+            gui.open(player, page, holder.getFilter(), holder.isSortDescending(), holder.getCategory());
         }
     }
 
@@ -131,10 +150,12 @@ public class MarketGUIListener implements Listener {
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (query.equalsIgnoreCase("cancel")) {
                 player.sendMessage(ChatColor.GRAY + "Search cancelled.");
-                MarketGUI.open(player, market, 0);
+                gui.open(player, 0);
                 return;
             }
-            MarketGUI.open(player, market, 0, query);
+            prefsManager.setFilter(player, query);
+            MarketPreferences prefs = prefsManager.get(player);
+            gui.open(player, 0, query, prefs.sortDescending, prefs.category);
         });
     }
 

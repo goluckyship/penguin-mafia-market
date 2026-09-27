@@ -14,12 +14,17 @@ import java.util.List;
 
 /**
  * Builds the /bm inventory screens: the main browse view (one item per row,
- * click to buy, with a search bar and price sorting) and the "My Listings"
- * management view (the same layout, but clicking an item cancels it and
- * hands it back instead of buying it). A shared bottom row of controls
- * (paging, search, my-listings/back, an info tile, and a page indicator)
- * keeps both views consistent, with the unused corners filled with glass
- * panes instead of left blank.
+ * click to buy, with a search bar, price sorting, and a category filter) and
+ * the "My Listings" management view (the same layout, but clicking an item
+ * cancels it and hands it back instead of buying it). A shared bottom row of
+ * controls (paging, search, sort, category, my-listings/back, an info tile,
+ * and a page indicator) keeps both views consistent, with the unused corners
+ * filled with glass panes instead of left blank.
+ *
+ * Instance-based (rather than the old static-method version) so it can hold
+ * a MarketPreferencesManager and remember each player's last-used search
+ * text, sort direction, and category filter across GUI closes and even
+ * server restarts.
  */
 public class MarketGUI {
 
@@ -27,28 +32,48 @@ public class MarketGUI {
     public static final String MY_LISTINGS_TITLE = ChatColor.DARK_PURPLE + "Black Market" + ChatColor.GRAY + " - My Listings";
     private static final int PAGE_SIZE = 45; // bottom row reserved for controls
 
-    public static void open(Player player, MarketManager market) {
-        open(player, market, 0, null);
+    private final MarketManager market;
+    private final MarketPreferencesManager prefsManager;
+
+    public MarketGUI(MarketManager market, MarketPreferencesManager prefsManager) {
+        this.market = market;
+        this.prefsManager = prefsManager;
     }
 
-    public static void open(Player player, MarketManager market, int page) {
-        open(player, market, page, null);
+    /** Opens the browse view using the player's remembered filter/sort/category. */
+    public void open(Player player) {
+        MarketPreferences prefs = prefsManager.get(player);
+        open(player, 0, prefs.filter, prefs.sortDescending, prefs.category);
     }
 
-    public static void open(Player player, MarketManager market, int page, String filter) {
+    public void open(Player player, int page) {
+        MarketPreferences prefs = prefsManager.get(player);
+        open(player, page, prefs.filter, prefs.sortDescending, prefs.category);
+    }
+
+    public void open(Player player, int page, String filter, boolean sortDescending, MarketCategory category) {
         List<Listing> matches = MarketManager.filter(market.getAllListings(), filter);
-        matches.sort(Comparator.comparingLong(l -> l.price));
-        build(player, matches, page, MarketHolder.Mode.BROWSE, filter, BROWSE_TITLE);
+        if (category != null && category != MarketCategory.ALL) {
+            List<Listing> byCategory = new ArrayList<>();
+            for (Listing listing : matches) {
+                if (MarketCategory.of(listing.item) == category) byCategory.add(listing);
+            }
+            matches = byCategory;
+        }
+        Comparator<Listing> byPrice = Comparator.comparingLong(l -> l.price);
+        matches.sort(sortDescending ? byPrice.reversed() : byPrice);
+        build(player, matches, page, MarketHolder.Mode.BROWSE, filter, sortDescending, category, BROWSE_TITLE);
     }
 
-    public static void openMyListings(Player player, MarketManager market, int page) {
+    public void openMyListings(Player player, int page) {
         List<Listing> mine = market.getListingsBy(player.getUniqueId());
         mine.sort(Comparator.comparingInt(l -> l.id));
-        build(player, mine, page, MarketHolder.Mode.MY_LISTINGS, null, MY_LISTINGS_TITLE);
+        build(player, mine, page, MarketHolder.Mode.MY_LISTINGS, null, false, MarketCategory.ALL, MY_LISTINGS_TITLE);
     }
 
-    private static void build(Player player, List<Listing> shown, int page, MarketHolder.Mode mode, String filter, String title) {
-        Inventory inv = Bukkit.createInventory(new MarketHolder(page, mode, filter), 54, title);
+    private void build(Player player, List<Listing> shown, int page, MarketHolder.Mode mode, String filter,
+                        boolean sortDescending, MarketCategory category, String title) {
+        Inventory inv = Bukkit.createInventory(new MarketHolder(page, mode, filter, sortDescending, category), 54, title);
 
         int start = page * PAGE_SIZE;
         int totalPages = Math.max(1, (int) Math.ceil(shown.size() / (double) PAGE_SIZE));
@@ -71,9 +96,9 @@ public class MarketGUI {
             if (mode == MarketHolder.Mode.MY_LISTINGS) {
                 meta.setDisplayName(ChatColor.GRAY + "You have no active listings");
                 meta.setLore(List.of(ChatColor.DARK_GRAY + "Use /bm sell <price> to list the item in your hand."));
-            } else if (filter != null && !filter.isBlank()) {
-                meta.setDisplayName(ChatColor.GRAY + "No listings match \"" + filter + "\"");
-                meta.setLore(List.of(ChatColor.DARK_GRAY + "Click the search icon below to try a different search."));
+            } else if ((filter != null && !filter.isBlank()) || (category != null && category != MarketCategory.ALL)) {
+                meta.setDisplayName(ChatColor.GRAY + "No listings match your filters");
+                meta.setLore(List.of(ChatColor.DARK_GRAY + "Try clearing the search or category filter below."));
             } else {
                 meta.setDisplayName(ChatColor.GRAY + "No listings yet");
                 meta.setLore(List.of(ChatColor.DARK_GRAY + "Use /bm sell <price> to list an item."));
@@ -97,9 +122,11 @@ public class MarketGUI {
         if (mode == MarketHolder.Mode.BROWSE) {
             inv.setItem(46, toggleItem(Material.NAME_TAG, "My Listings", "View and cancel your own listings."));
             inv.setItem(47, toggleItem(Material.COMPASS, "Search", "Click, then type an item or seller name in chat.",
-                    "Type \"cancel\" to back out."));
+                    "Type \"cancel\" to back out.", "Remembered until you search again."));
+            inv.setItem(48, sortItem(sortDescending));
+            inv.setItem(51, categoryItem(category));
             if (filter != null && !filter.isBlank()) {
-                inv.setItem(48, toggleItem(Material.BARRIER, "Clear Search", "Currently searching: " + ChatColor.WHITE + filter));
+                inv.setItem(52, toggleItem(Material.BARRIER, "Clear Search", "Currently searching: " + ChatColor.WHITE + filter));
             }
         } else {
             inv.setItem(46, toggleItem(Material.ARROW, "Back to Market", "Return to browsing all listings."));
@@ -132,7 +159,18 @@ public class MarketGUI {
         player.openInventory(inv);
     }
 
-    private static ItemStack pane() {
+    private ItemStack sortItem(boolean sortDescending) {
+        return toggleItem(Material.HOPPER, "Sort: " + (sortDescending ? "Price High to Low" : "Price Low to High"),
+                "Click to flip sort direction.", "Remembered next time you open the market.");
+    }
+
+    private ItemStack categoryItem(MarketCategory category) {
+        MarketCategory shown = category == null ? MarketCategory.ALL : category;
+        return toggleItem(Material.CHEST, "Category: " + shown.label,
+                "Click to cycle All / Blocks / Armor / Materials.", "Remembered next time you open the market.");
+    }
+
+    private ItemStack pane() {
         ItemStack item = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(" ");
@@ -140,7 +178,7 @@ public class MarketGUI {
         return item;
     }
 
-    private static ItemStack navItem(Material material, String name) {
+    private ItemStack navItem(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.YELLOW + name);
@@ -148,7 +186,7 @@ public class MarketGUI {
         return item;
     }
 
-    private static ItemStack toggleItem(Material material, String name, String... lore) {
+    private ItemStack toggleItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + name);
@@ -159,7 +197,7 @@ public class MarketGUI {
         return item;
     }
 
-    private static ItemStack buildDisplayItem(Listing listing) {
+    private ItemStack buildDisplayItem(Listing listing) {
         ItemStack display = listing.item.clone();
         ItemMeta meta = display.getItemMeta();
         List<String> lore = new ArrayList<>();
@@ -174,7 +212,7 @@ public class MarketGUI {
         return display;
     }
 
-    private static ItemStack buildMyListingItem(Listing listing) {
+    private ItemStack buildMyListingItem(Listing listing) {
         ItemStack display = listing.item.clone();
         ItemMeta meta = display.getItemMeta();
         List<String> lore = new ArrayList<>();

@@ -17,11 +17,13 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     private final PenguinMafiaMarket plugin;
     private final Economy economy;
     private final MarketManager market;
+    private final MarketGUI gui;
 
-    public MarketCommand(PenguinMafiaMarket plugin, Economy economy, MarketManager market) {
+    public MarketCommand(PenguinMafiaMarket plugin, Economy economy, MarketManager market, MarketGUI gui) {
         this.plugin = plugin;
         this.economy = economy;
         this.market = market;
+        this.gui = gui;
     }
 
     @Override
@@ -33,7 +35,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         Player player = (Player) sender;
 
         if (args.length == 0) {
-            MarketGUI.open(player, market);
+            gui.open(player);
             return true;
         }
 
@@ -42,7 +44,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             case "sell":
                 return handleSell(player, args);
             case "list":
-                MarketGUI.openMyListings(player, market, 0);
+                gui.openMyListings(player, 0);
                 return true;
             case "cancel":
                 return handleCancel(player, args);
@@ -222,7 +224,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(Player player) {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "--- Penguin Mafia Black Market ---");
-        player.sendMessage(ChatColor.GRAY + "/bm " + ChatColor.WHITE + "- open the market GUI (search + sort by price built in)");
+        player.sendMessage(ChatColor.GRAY + "/bm " + ChatColor.WHITE + "- open the market GUI (search, sort by price, and category filters, all remembered for you)");
         player.sendMessage(ChatColor.GRAY + "/bm sell <price> " + ChatColor.WHITE + "- list the item in your hand");
         player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- manage your listings (cancel with a click)");
         player.sendMessage(ChatColor.GRAY + "/bm cancel <id> " + ChatColor.WHITE + "- cancel a listing");
