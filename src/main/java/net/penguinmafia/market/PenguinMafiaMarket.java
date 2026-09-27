@@ -47,6 +47,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
                 new File(getDataFolder(), "frozen_realm_salts.properties"));
         getCommand("frozenrealm").setExecutor(new FrozenRealmCommand(frozenRealmStructures));
         getServer().getPluginManager().registerEvents(frozenRealmStructures, this);
+        getServer().getPluginManager().registerEvents(new FrozenRealmMonsters(this, economy), this);
 
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }

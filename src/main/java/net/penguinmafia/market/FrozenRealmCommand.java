@@ -62,6 +62,8 @@ public class FrozenRealmCommand implements CommandExecutor {
         player.teleport(dest);
         player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Welcome to the Frozen Realm."
                 + ChatColor.RESET + ChatColor.GRAY + " Use /frozenrealm back to return.");
+        player.sendMessage(ChatColor.GRAY + "Watch for glowing " + ChatColor.AQUA + "Frozen Reavers"
+                + ChatColor.GRAY + " - tougher mobs that drop bonus Frozen Coins.");
         return true;
     }
 

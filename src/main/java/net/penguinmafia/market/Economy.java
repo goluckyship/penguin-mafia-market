@@ -24,7 +24,9 @@ import java.util.Arrays;
  *    unobtainable by design, not just by a hidden tag. It's also renamed,
  *    given lore, and tagged with a PersistentDataContainer marker as a
  *    belt-and-suspenders check, and MarketGUIListener blocks it from ever
- *    being placed as a block. Only /bm withdraw can produce a real one.
+ *    being placed as a block. Only this plugin can produce a real one -
+ *    /bm withdraw, and Frozen Reaver kills in the Frozen Realm (see
+ *    FrozenRealmMonsters) are the only two sources.
  * /bm deposit and /bm withdraw convert between the two.
  */
 public class Economy {
