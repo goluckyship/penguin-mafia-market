@@ -7,9 +7,11 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.CamelHusk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Husk;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Parched;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,20 +27,21 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.Random;
 
 /**
- * Frozen Reavers: the only mob that naturally spawns in the Frozen Realm.
+ * Frozen Reavers: the only mobs that naturally spawn in the Frozen Realm.
  * Nowhere else on the server has monsters that drop Frozen Coins - this is
  * the one place it happens, which is the point: it gives players a reason
  * to go out and fight there, not just visit for the cabins/bridges.
  *
  * The Frozen Wastes biome's spawn table (see the penguin_frozen_realm
- * datapack) is restricted to husks only, and every natural husk spawn here
- * becomes a Reaver - tagged with a PersistentDataContainer marker, renamed,
- * buffed, and given icy gear so it reads as special at a glance. The tag is
- * what EntityDeathEvent actually checks - nothing else about the mob (name,
- * gear) is load-bearing, so a resource-pack change or a plugin that strips
- * custom names can't break the coin drop. Restricting to Husk here too
- * (not just "any Monster") means a stray egg-spawned or summoned mob of a
- * different type in this world still won't turn into a Reaver.
+ * datapack) is restricted to husks only - but vanilla can pair a husk spawn
+ * with a Parched (a desert Skeleton variant) riding a Camel Husk, the same
+ * jockey mechanic as zombies and chickens. Rather than fight that, all three
+ * (Husk, Parched, Camel Husk) get the exact same 100% Reaver treatment:
+ * tagged with a PersistentDataContainer marker, renamed, buffed, and given
+ * icy gear. Anything else is cancelled outright. The tag is what
+ * EntityDeathEvent actually checks - nothing else about the mob (name, gear)
+ * is load-bearing, so a resource-pack change or a plugin that strips custom
+ * names can't break the coin drop.
  */
 public class FrozenRealmMonsters implements Listener {
 
@@ -77,17 +80,11 @@ public class FrozenRealmMonsters implements Listener {
             return;
         }
 
-        if (!(event.getEntity() instanceof Husk husk)) {
-            // Husks bring their own uninvited guests: vanilla can naturally
-            // pair a husk spawn with a Parched (a desert Skeleton variant)
-            // riding a Camel Husk, the same way zombies get chicken jockeys.
-            // Our biome's spawn table only lists husk, but those companions
-            // ride in "for free" outside that table entirely, uncapped and
-            // untouched by the Reaver logic below - exactly the kind of
-            // extra, unaccounted-for entity that piles up over time and
-            // drags the server down. The Frozen Realm is meant to be husk
-            // (Frozen Reaver) only, so cancel anything else that tries to
-            // spawn alongside one.
+        Entity spawned = event.getEntity();
+        if (!(spawned instanceof Husk) && !(spawned instanceof Parched) && !(spawned instanceof CamelHusk)) {
+            // Anything else that isn't one of our three recognized "Reaver
+            // material" types doesn't belong here - cancel it rather than
+            // let some other, totally uncontrolled mob spawn in unnoticed.
             event.setCancelled(true);
             return;
         }
@@ -97,7 +94,7 @@ public class FrozenRealmMonsters implements Listener {
             return;
         }
 
-        makeReaver(husk);
+        makeReaver((LivingEntity) spawned);
     }
 
     private int countReavers(World world) {
@@ -111,7 +108,7 @@ public class FrozenRealmMonsters implements Listener {
         return count;
     }
 
-    private void makeReaver(Husk monster) {
+    private void makeReaver(LivingEntity monster) {
         monster.getPersistentDataContainer().set(reaverKey, PersistentDataType.BYTE, (byte) 1);
         monster.setCustomName(ChatColor.AQUA + "" + ChatColor.BOLD + "Frozen Reaver");
         monster.setCustomNameVisible(true);
