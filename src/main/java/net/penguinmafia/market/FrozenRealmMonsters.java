@@ -7,8 +7,8 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Husk;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -24,26 +24,24 @@ import org.bukkit.potion.PotionEffectType;
 import java.util.Random;
 
 /**
- * Frozen Reavers: a rare, tougher variant of the ordinary hostile mobs that
- * spawn naturally in the Frozen Realm. Nowhere else on the server has
- * monsters that drop Frozen Coins - this is the one place it happens, which
- * is the point: it gives players a reason to go out and fight there, not
- * just visit for the cabins/bridges.
+ * Frozen Reavers: the only mob that naturally spawns in the Frozen Realm.
+ * Nowhere else on the server has monsters that drop Frozen Coins - this is
+ * the one place it happens, which is the point: it gives players a reason
+ * to go out and fight there, not just visit for the cabins/bridges.
  *
- * A Reaver is just a normal hostile mob (skeleton, zombie, stray, whatever
- * naturally spawned) picked at spawn time, tagged with a
- * PersistentDataContainer marker, renamed, buffed, and given icy gear so it
- * reads as special at a glance. The tag is what EntityDeathEvent actually
- * checks - nothing else about the mob (name, gear) is load-bearing, so a
- * resource-pack change or a plugin that strips custom names can't break the
- * coin drop.
+ * The Frozen Wastes biome's spawn table (see the penguin_frozen_realm
+ * datapack) is restricted to husks only, and every natural husk spawn here
+ * becomes a Reaver - tagged with a PersistentDataContainer marker, renamed,
+ * buffed, and given icy gear so it reads as special at a glance. The tag is
+ * what EntityDeathEvent actually checks - nothing else about the mob (name,
+ * gear) is load-bearing, so a resource-pack change or a plugin that strips
+ * custom names can't break the coin drop. Restricting to Husk here too
+ * (not just "any Monster") means a stray egg-spawned or summoned mob of a
+ * different type in this world still won't turn into a Reaver.
  */
 public class FrozenRealmMonsters implements Listener {
 
     private static final NamespacedKey FROZEN_REALM_KEY = NamespacedKey.fromString("penguinmafia:frozen_realm");
-
-    /** Fraction of natural hostile spawns in the Frozen Realm that become Reavers. */
-    private static final double SPAWN_CHANCE = 0.12;
 
     private static final long MIN_COINS = 15L;
     private static final long MAX_COINS = 50L;
@@ -62,14 +60,12 @@ public class FrozenRealmMonsters implements Listener {
         World world = event.getLocation().getWorld();
         if (world == null || FROZEN_REALM_KEY == null || !FROZEN_REALM_KEY.equals(world.getKey())) return;
         if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL) return;
-        if (!(event.getEntity() instanceof Monster monster)) return;
+        if (!(event.getEntity() instanceof Husk husk)) return;
 
-        if (random.nextDouble() >= SPAWN_CHANCE) return;
-
-        makeReaver(monster);
+        makeReaver(husk);
     }
 
-    private void makeReaver(Monster monster) {
+    private void makeReaver(Husk monster) {
         monster.getPersistentDataContainer().set(reaverKey, PersistentDataType.BYTE, (byte) 1);
         monster.setCustomName(ChatColor.AQUA + "" + ChatColor.BOLD + "Frozen Reaver");
         monster.setCustomNameVisible(true);
