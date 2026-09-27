@@ -75,26 +75,34 @@ public class FrozenRealmMonsters implements Listener {
     public void onSpawn(CreatureSpawnEvent event) {
         World world = event.getLocation().getWorld();
         if (world == null || FROZEN_REALM_KEY == null || !FROZEN_REALM_KEY.equals(world.getKey())) return;
-        if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL
-                && event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.JOCKEY) {
-            return;
-        }
 
         Entity spawned = event.getEntity();
-        if (!(spawned instanceof Husk) && !(spawned instanceof Parched) && !(spawned instanceof CamelHusk)) {
-            // Anything else that isn't one of our three recognized "Reaver
-            // material" types doesn't belong here - cancel it rather than
-            // let some other, totally uncontrolled mob spawn in unnoticed.
-            event.setCancelled(true);
+        boolean reaverMaterial = spawned instanceof Husk || spawned instanceof Parched || spawned instanceof CamelHusk;
+
+        if (reaverMaterial) {
+            // Convert regardless of SpawnReason - the vanilla husk/Parched/
+            // Camel Husk jockey grouping doesn't reliably come through as
+            // NATURAL or JOCKEY (a standalone Parched with no mount can show
+            // up too), and gating on spawn reason here just meant some of
+            // them slipped through completely untouched: default name, no
+            // buffs, no coin drop on death.
+            if (countReavers(world) >= MAX_REAVERS) {
+                event.setCancelled(true);
+                return;
+            }
+            makeReaver((LivingEntity) spawned);
             return;
         }
 
-        if (countReavers(world) >= MAX_REAVERS) {
+        // Not one of our three types - only cancel it if it came from the
+        // dimension's own natural spawn cycle (or a jockey riding one of
+        // those). Anything else (an egg, a summon command, another plugin)
+        // is left alone so we don't interfere with things unrelated to the
+        // Frozen Realm's own mob spawning.
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL
+                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.JOCKEY) {
             event.setCancelled(true);
-            return;
         }
-
-        makeReaver((LivingEntity) spawned);
     }
 
     private int countReavers(World world) {
