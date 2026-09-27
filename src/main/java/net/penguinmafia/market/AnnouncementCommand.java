@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * /pa (Penguin Announcements) - op-only management of the looping broadcast messages.
+ * /pa (Penguin Announcements) - manages the looping broadcast messages. Open to all players.
  * /pa add <message>       - add a new message to the rotation
  * /pa remove <#>          - remove a message by its number in /pa list
  * /pa list                - show all messages, their numbers, and current settings
@@ -28,11 +28,6 @@ public class AnnouncementCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + "Only ops can manage Penguin Announcements.");
-            return true;
-        }
-
         if (args.length == 0) {
             sendUsage(sender);
             return true;

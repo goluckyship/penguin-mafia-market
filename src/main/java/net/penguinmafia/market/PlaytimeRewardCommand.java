@@ -6,8 +6,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
 /**
- * /ptr (Playtime Rewards) - op-only management of the passive Frozen Coin
- * payout that every online player gets every so often just for playing.
+ * /ptr (Playtime Rewards) - manages the passive Frozen Coin payout that
+ * every online player gets every so often just for playing. Open to all players.
  * /ptr status               - show current settings
  * /ptr interval <minutes>   - how often the payout fires (default 10)
  * /ptr amount <coins>       - how many coins each payout gives (default 10)
@@ -23,11 +23,6 @@ public class PlaytimeRewardCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + "Only ops can manage playtime rewards.");
-            return true;
-        }
-
         if (args.length == 0) {
             sendStatus(sender);
             return true;
