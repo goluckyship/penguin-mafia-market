@@ -109,6 +109,12 @@ public class FrozenRealmMonsters implements Listener {
         LivingEntity entity = event.getEntity();
         if (!entity.getPersistentDataContainer().has(reaverKey, PersistentDataType.BYTE)) return;
 
+        // Reavers are a coin source, not a loot mob - strip whatever vanilla
+        // husk drops (rotten flesh, the rare carrot/potato/iron ingot) would
+        // otherwise be queued up, so Frozen Coins are the only thing that hits
+        // the ground.
+        event.getDrops().clear();
+
         int amount = (int) (MIN_COINS + random.nextInt((int) (MAX_COINS - MIN_COINS + 1)));
         event.getDrops().add(economy.coinItem(amount));
 
