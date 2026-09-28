@@ -71,6 +71,20 @@ public class Economy {
         }
     }
 
+    /**
+     * Whether this player has /autodeposit (/ad) turned on - stored under its
+     * own top-level "autodeposit" section so it never collides with the raw
+     * UUID keys used for balances above.
+     */
+    public boolean isAutoDepositEnabled(OfflinePlayer player) {
+        return config.getBoolean("autodeposit." + player.getUniqueId(), false);
+    }
+
+    public void setAutoDepositEnabled(OfflinePlayer player, boolean enabled) {
+        config.set("autodeposit." + player.getUniqueId(), enabled);
+        save();
+    }
+
     /** The vanilla item Frozen Coins are built on - has zero survival source. */
     public static final Material COIN_MATERIAL = Material.STRUCTURE_VOID;
 

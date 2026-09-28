@@ -57,6 +57,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         SandboxCommand.createOrLoad(this);
         getCommand("sandbox").setExecutor(new SandboxCommand());
 
+        getCommand("autodeposit").setExecutor(new AutoDepositCommand(economy));
+        AutoDepositManager.start(this, economy);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

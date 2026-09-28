@@ -148,6 +148,11 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleWithdraw(Player player, String[] args) {
+        if (economy.isAutoDepositEnabled(player)) {
+            player.sendMessage(ChatColor.RED + "You can't withdraw while Auto-Deposit is on."
+                    + ChatColor.GRAY + " Turn it off first with /ad.");
+            return true;
+        }
         if (args.length < 2) {
             player.sendMessage(ChatColor.RED + "Usage: /bm withdraw <amount>");
             return true;
@@ -231,6 +236,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GRAY + "/bm balance " + ChatColor.WHITE + "- check your coin balance");
         player.sendMessage(ChatColor.GRAY + "/bm deposit " + ChatColor.WHITE + "- turn held coins into balance");
         player.sendMessage(ChatColor.GRAY + "/bm withdraw <amount> " + ChatColor.WHITE + "- turn balance into held coins");
+        player.sendMessage(ChatColor.GRAY + "/ad " + ChatColor.WHITE + "- toggle Auto-Deposit (coins you pick up go straight to your balance)");
     }
 
     private String describeItem(ItemStack item) {

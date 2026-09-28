@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.17.0
+version: 1.18.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -70,3 +70,10 @@ commands:
       /sandbox - teleport there (ops only)
       /sandbox back - return to the Overworld
     aliases: [sb]
+  autodeposit:
+    description: Toggle automatic depositing of Frozen Coins you pick up straight into your balance.
+    usage: |
+      /autodeposit - turn Auto-Deposit on or off. While it's on, Frozen Coins that land in your
+      inventory are swept into your balance automatically, and /bm withdraw is blocked until you
+      turn it back off.
+    aliases: [ad]
