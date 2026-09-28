@@ -60,6 +60,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("autodeposit").setExecutor(new AutoDepositCommand(economy));
         AutoDepositManager.start(this, economy);
 
+        AfkChunkLoaderManager afkChunkLoaderManager = new AfkChunkLoaderManager(this);
+        getCommand("afk").setExecutor(new AfkCommand(afkChunkLoaderManager));
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

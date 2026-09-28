@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.18.0
+version: 1.19.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -77,3 +77,8 @@ commands:
       inventory are swept into your balance automatically, and /bm withdraw is blocked until you
       turn it back off.
     aliases: [ad]
+  afk:
+    description: Op-only - force-load the chunks around you so they keep ticking after you log out.
+    usage: |
+      /afk - toggle a 3x3 chunk area centered on you (run again to turn it off)
+      /afk <radius> - toggle with a custom radius in chunks (0-3)
