@@ -60,8 +60,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("autodeposit").setExecutor(new AutoDepositCommand(economy));
         AutoDepositManager.start(this, economy);
 
-        AfkChunkLoaderManager afkChunkLoaderManager = new AfkChunkLoaderManager(this);
-        getCommand("afk").setExecutor(new AfkCommand(afkChunkLoaderManager));
+        AfkFarmManager afkFarmManager = new AfkFarmManager(this, economy);
+        getServer().getPluginManager().registerEvents(afkFarmManager, this);
+        getCommand("afk").setExecutor(new AfkCommand(afkFarmManager));
 
         GeneratorManager generatorManager = new GeneratorManager(this, economy);
         GeneratorCommand generatorCommand = new GeneratorCommand(generatorManager);

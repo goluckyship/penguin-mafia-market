@@ -7,15 +7,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * /afk (op-only): toggles a force-loaded chunk area centered on the op's
- * current location, so the chunks there keep ticking - farms, redstone,
- * anything - even after they log out. Runs it again to turn it back off.
+ * /afk (op-only): toggles an AFK Farm at the op's current location. While
+ * it's on, the chunks there stay force-loaded (so a nearby /gen generator or
+ * a normal farm keeps ticking), any dropped Frozen Coins in the area are
+ * vacuumed up and credited straight to the op's balance - even while fully
+ * disconnected - and everything else collected waits in a mailbox delivered
+ * next time they join. Run /afk again, from anywhere, to turn it off.
  */
 public class AfkCommand implements CommandExecutor {
 
-    private final AfkChunkLoaderManager manager;
+    private final AfkFarmManager manager;
 
-    public AfkCommand(AfkChunkLoaderManager manager) {
+    public AfkCommand(AfkFarmManager manager) {
         this.manager = manager;
     }
 
@@ -31,6 +34,12 @@ public class AfkCommand implements CommandExecutor {
             return true;
         }
 
+        if (manager.isActive(player)) {
+            manager.stop(player);
+            player.sendMessage(ChatColor.GRAY + "AFK Farm stopped.");
+            return true;
+        }
+
         int radius = 1; // default: a 3x3 chunk area
         if (args.length > 0) {
             try {
@@ -41,17 +50,12 @@ public class AfkCommand implements CommandExecutor {
             }
         }
 
-        AfkChunkLoaderManager.ToggleResult result = manager.toggle(player, radius);
-        if (result.enabled) {
-            int size = result.radius * 2 + 1;
-            player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "AFK chunk-loading enabled."
-                    + ChatColor.RESET + ChatColor.GRAY + " Keeping a " + size + "x" + size + " chunk area loaded around "
-                    + result.centerX * 16 + ", " + result.centerZ * 16 + " in " + result.world + ".");
-            player.sendMessage(ChatColor.GRAY + "This stays loaded even after you log out - run /afk again to turn it off.");
-        } else {
-            player.sendMessage(ChatColor.GRAY + "AFK chunk-loading disabled. Those chunks will unload normally now"
-                    + " (unless another op's /afk zone still overlaps them).");
-        }
+        int applied = manager.start(player, radius);
+        int size = applied * 2 + 1;
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "AFK Farm started."
+                + ChatColor.RESET + ChatColor.GRAY + " Keeping a " + size + "x" + size + " chunk area loaded here, "
+                + "vacuuming up Frozen Coins into your balance and holding everything else for you - even offline.");
+        player.sendMessage(ChatColor.GRAY + "Run /afk again, from anywhere, to turn it off.");
         return true;
     }
 }

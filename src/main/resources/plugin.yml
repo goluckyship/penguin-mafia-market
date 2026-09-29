@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.20.0
+version: 1.21.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -78,10 +78,13 @@ commands:
       turn it back off.
     aliases: [ad]
   afk:
-    description: Op-only - force-load the chunks around you so they keep ticking after you log out.
+    description: Op-only - AFK Farm mode. Keeps chunks loaded, auto-collects Frozen Coins into your balance (even offline), and mails you anything else collected.
     usage: |
-      /afk - toggle a 3x3 chunk area centered on you (run again to turn it off)
-      /afk <radius> - toggle with a custom radius in chunks (0-3)
+      /afk [radius] - start an AFK Farm here (default 3x3 chunks, or 0-3 for a custom radius)
+        Force-loads the area, vacuums dropped Frozen Coins straight into your balance every
+        second (works even while you're disconnected), and holds any other item picked up in
+        a mailbox delivered next time you join. Pair with /gen to have something to collect.
+      /afk - with no args while one is running, stops your AFK Farm from anywhere
   gen:
     description: Op-only - drop a standing item generator that spawns items (including real Frozen Coins) on a timer.
     usage: |
