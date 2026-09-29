@@ -85,6 +85,21 @@ public class Economy {
         save();
     }
 
+    /**
+     * Whether this player has turned off the /chat toggle - stops
+     * Auto-Deposit and AFK Farm from printing a message every single time
+     * they credit the player's balance, so those don't spam the screen.
+     * Defaults to false (messages on), same as before this existed.
+     */
+    public boolean isChatQuiet(OfflinePlayer player) {
+        return config.getBoolean("quietchat." + player.getUniqueId(), false);
+    }
+
+    public void setChatQuiet(OfflinePlayer player, boolean quiet) {
+        config.set("quietchat." + player.getUniqueId(), quiet);
+        save();
+    }
+
     /** The vanilla item Frozen Coins are built on - has zero survival source. */
     public static final Material COIN_MATERIAL = Material.STRUCTURE_VOID;
 

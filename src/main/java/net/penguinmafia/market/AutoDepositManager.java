@@ -59,8 +59,10 @@ public class AutoDepositManager extends BukkitRunnable {
         if (total <= 0) return;
 
         economy.addBalance(player, total);
-        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "[Auto-Deposit] "
-                + ChatColor.RESET + ChatColor.GRAY + "Deposited " + total + " Frozen Coins. New balance: "
-                + ChatColor.AQUA + economy.getBalance(player));
+        if (!economy.isChatQuiet(player)) {
+            player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "[Auto-Deposit] "
+                    + ChatColor.RESET + ChatColor.GRAY + "Deposited " + total + " Frozen Coins. New balance: "
+                    + ChatColor.AQUA + economy.getBalance(player));
+        }
     }
 }

@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.21.0
+version: 1.22.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -91,3 +91,7 @@ commands:
       /gen <item> <delay-secs> <amount> - start a generator at your feet (one per player at a time)
         <item> can be a material id (diamond, iron_ingot, ...) or "coin" for real Frozen Coins
       /gen - with no args, stops your own active generator from anywhere
+  chat:
+    description: Toggle whether Auto-Deposit and AFK Farm print a message every time they credit your balance.
+    usage: |
+      /chat - turn balance-update chat messages on or off (check /bal instead when they're off)

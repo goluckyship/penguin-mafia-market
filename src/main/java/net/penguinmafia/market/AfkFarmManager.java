@@ -185,8 +185,10 @@ public class AfkFarmManager implements Listener {
 
             Player online = Bukkit.getPlayer(ownerId);
             if (online != null) {
-                online.sendMessage(ChatColor.AQUA + "[AFK Farm] " + ChatColor.GRAY + "+" + coinsFound
-                        + " Frozen Coins. Balance: " + ChatColor.AQUA + economy.getBalance(owner));
+                if (!economy.isChatQuiet(owner)) {
+                    online.sendMessage(ChatColor.AQUA + "[AFK Farm] " + ChatColor.GRAY + "+" + coinsFound
+                            + " Frozen Coins. Balance: " + ChatColor.AQUA + economy.getBalance(owner));
+                }
             } else {
                 coinsSinceLastSeen.merge(ownerId, coinsFound, Long::sum);
             }
