@@ -63,6 +63,11 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         AfkChunkLoaderManager afkChunkLoaderManager = new AfkChunkLoaderManager(this);
         getCommand("afk").setExecutor(new AfkCommand(afkChunkLoaderManager));
 
+        GeneratorManager generatorManager = new GeneratorManager(this, economy);
+        GeneratorCommand generatorCommand = new GeneratorCommand(generatorManager);
+        getCommand("gen").setExecutor(generatorCommand);
+        getCommand("gen").setTabCompleter(generatorCommand);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

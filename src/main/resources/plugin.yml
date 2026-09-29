@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.19.0
+version: 1.20.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -82,3 +82,10 @@ commands:
     usage: |
       /afk - toggle a 3x3 chunk area centered on you (run again to turn it off)
       /afk <radius> - toggle with a custom radius in chunks (0-3)
+  gen:
+    description: Op-only - drop a standing item generator that spawns items (including real Frozen Coins) on a timer.
+    usage: |
+      /gen <item> <delay-secs> <amount> - create a generator at your feet (run it again within 2 blocks to remove)
+        <item> can be a material id (diamond, iron_ingot, ...) or "coin" for real Frozen Coins
+      /gen list - show every active generator
+      /gen remove <id> - remove a generator from anywhere by its id
