@@ -1,7 +1,6 @@
 package net.penguinmafia.market;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,10 +13,11 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * /gen (op-only): drops a standing item generator at the op's current
- * location that spawns a chosen item - including real Frozen Coins - on a
- * fixed interval, forever (persists across restarts) until an op stands
- * within 2 blocks of it and runs /gen again to remove it.
+ * /gen (op-only): each op can have one item generator running at a time.
+ * Run it with args to start one at your current location - it spawns a
+ * chosen item there, including real Frozen Coins, on a fixed interval,
+ * forever (persists across restarts). Run /gen again, from anywhere, with
+ * no need to be standing at it, to stop your own.
  */
 public class GeneratorCommand implements CommandExecutor, TabCompleter {
 
@@ -39,11 +39,10 @@ public class GeneratorCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("list")) {
-            return handleList(player);
-        }
-        if (args.length == 2 && args[0].equalsIgnoreCase("remove")) {
-            return handleRemove(player, args[1]);
+        if (manager.isActive(player)) {
+            manager.stop(player);
+            player.sendMessage(ChatColor.GRAY + "Your generator has been stopped.");
+            return true;
         }
 
         if (args.length != 3) {
@@ -80,20 +79,14 @@ public class GeneratorCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        Location location = player.getLocation();
         String materialName = coin ? null : material.name();
-        GeneratorManager.Generator result = manager.toggle(location, coin, materialName, delaySeconds, amount);
+        manager.start(player, coin, materialName, delaySeconds, amount);
 
-        if (result == null) {
-            player.sendMessage(ChatColor.GRAY + "Removed the generator near you.");
-        } else {
-            String itemLabel = coin ? "Frozen Coins" : amount + "x " + material.name().toLowerCase().replace('_', ' ');
-            player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Generator #" + result.id + " created."
-                    + ChatColor.RESET + ChatColor.GRAY + " Dropping " + itemLabel + " right here every " + delaySeconds
-                    + "s, forever (survives restarts).");
-            player.sendMessage(ChatColor.GRAY + "Stand within 2 blocks and run /gen again to remove it,"
-                    + " or /gen remove " + result.id + " from anywhere.");
-        }
+        String itemLabel = coin ? "Frozen Coins" : amount + "x " + material.name().toLowerCase().replace('_', ' ');
+        player.sendMessage(ChatColor.AQUA + "" + ChatColor.BOLD + "Generator started."
+                + ChatColor.RESET + ChatColor.GRAY + " Dropping " + itemLabel + " right here every " + delaySeconds
+                + "s, forever (survives restarts).");
+        player.sendMessage(ChatColor.GRAY + "Run /gen again, from anywhere, to stop it.");
         return true;
     }
 
@@ -102,51 +95,18 @@ public class GeneratorCommand implements CommandExecutor, TabCompleter {
                 || s.equalsIgnoreCase("frozencoin") || s.equalsIgnoreCase("frozencoins");
     }
 
-    private boolean handleList(Player player) {
-        List<GeneratorManager.Generator> all = manager.list();
-        if (all.isEmpty()) {
-            player.sendMessage(ChatColor.GRAY + "No generators are active.");
-            return true;
-        }
-        player.sendMessage(ChatColor.LIGHT_PURPLE + "--- Active Generators ---");
-        for (GeneratorManager.Generator gen : all) {
-            String itemLabel = gen.coin ? "Frozen Coins" : gen.materialName.toLowerCase().replace('_', ' ');
-            player.sendMessage(ChatColor.GRAY + "#" + gen.id + " " + ChatColor.WHITE + gen.amount + "x " + itemLabel
-                    + ChatColor.GRAY + " every " + gen.delaySeconds + "s @ " + gen.world + " "
-                    + (int) gen.x + ", " + (int) gen.y + ", " + (int) gen.z);
-        }
-        return true;
-    }
-
-    private boolean handleRemove(Player player, String idArg) {
-        int id;
-        try {
-            id = Integer.parseInt(idArg);
-        } catch (NumberFormatException e) {
-            player.sendMessage(ChatColor.RED + "Usage: /gen remove <id>");
-            return true;
-        }
-        if (manager.remove(id)) {
-            player.sendMessage(ChatColor.GRAY + "Removed generator #" + id + ".");
-        } else {
-            player.sendMessage(ChatColor.RED + "No generator #" + id + " found. Check /gen list.");
-        }
-        return true;
-    }
-
     private void sendUsage(Player player) {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "--- /gen ---");
         player.sendMessage(ChatColor.GRAY + "/gen <item> <delay-secs> <amount> " + ChatColor.WHITE
-                + "- drop a generator at your feet (run again within 2 blocks to remove)");
+                + "- start a generator at your feet (you can only have one running at a time)");
         player.sendMessage(ChatColor.GRAY + "  <item> " + ChatColor.WHITE + "- a material id (diamond, iron_ingot, ...) or \"coin\" for Frozen Coins");
-        player.sendMessage(ChatColor.GRAY + "/gen list " + ChatColor.WHITE + "- show all active generators");
-        player.sendMessage(ChatColor.GRAY + "/gen remove <id> " + ChatColor.WHITE + "- remove a generator from anywhere");
+        player.sendMessage(ChatColor.GRAY + "/gen " + ChatColor.WHITE + "- with no args, stops your active generator from anywhere");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(Arrays.asList("coin", "list", "remove"));
+            List<String> options = new ArrayList<>(Arrays.asList("coin"));
             for (Material m : Material.values()) {
                 if (m.isItem()) options.add(m.name().toLowerCase());
             }

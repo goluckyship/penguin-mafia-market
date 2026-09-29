@@ -85,7 +85,6 @@ commands:
   gen:
     description: Op-only - drop a standing item generator that spawns items (including real Frozen Coins) on a timer.
     usage: |
-      /gen <item> <delay-secs> <amount> - create a generator at your feet (run it again within 2 blocks to remove)
+      /gen <item> <delay-secs> <amount> - start a generator at your feet (one per player at a time)
         <item> can be a material id (diamond, iron_ingot, ...) or "coin" for real Frozen Coins
-      /gen list - show every active generator
-      /gen remove <id> - remove a generator from anywhere by its id
+      /gen - with no args, stops your own active generator from anywhere

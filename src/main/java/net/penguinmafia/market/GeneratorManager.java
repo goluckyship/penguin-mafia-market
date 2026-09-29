@@ -6,27 +6,27 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
- * Backs /gen: lets ops drop a standing item generator anywhere in the world
- * that spawns a fixed amount of a chosen item - including real, depositable
- * Frozen Coins, built through Economy so they carry the same persistent
- * data tag as a /bm withdraw - as dropped item entities on a fixed
- * interval, forever, even across restarts, until an op removes it.
+ * Backs /gen: each op can have at most one item generator active at a time.
+ * They start it wherever they're standing and it spawns a fixed amount of a
+ * chosen item there - including real, depositable Frozen Coins, built
+ * through Economy so they carry the same persistent data tag as a
+ * /bm withdraw - every N seconds, forever, at that exact spot, surviving
+ * restarts, until that same op runs /gen again (from anywhere) to stop it.
  */
 public class GeneratorManager {
 
     public static class Generator {
-        final int id;
         final String world;
         final double x, y, z;
         final boolean coin;
@@ -35,9 +35,8 @@ public class GeneratorManager {
         final int amount;
         transient int ticksLeft;
 
-        Generator(int id, String world, double x, double y, double z, boolean coin,
+        Generator(String world, double x, double y, double z, boolean coin,
                   String materialName, int delaySeconds, int amount) {
-            this.id = id;
             this.world = world;
             this.x = x;
             this.y = y;
@@ -54,8 +53,8 @@ public class GeneratorManager {
     private final Economy economy;
     private final File file;
     private final YamlConfiguration config;
-    private final Map<Integer, Generator> generators = new HashMap<>();
-    private int nextId = 1;
+
+    private final Map<UUID, Generator> generators = new HashMap<>();
 
     public GeneratorManager(PenguinMafiaMarket plugin, Economy economy) {
         this.plugin = plugin;
@@ -67,13 +66,12 @@ public class GeneratorManager {
     }
 
     private void load() {
-        nextId = config.getInt("next-id", 1);
         ConfigurationSection section = config.getConfigurationSection("generators");
         if (section == null) return;
         for (String key : section.getKeys(false)) {
             String path = "generators." + key;
             try {
-                int id = Integer.parseInt(key);
+                UUID id = UUID.fromString(key);
                 String world = config.getString(path + ".world");
                 double x = config.getDouble(path + ".x");
                 double y = config.getDouble(path + ".y");
@@ -82,12 +80,12 @@ public class GeneratorManager {
                 String materialName = config.getString(path + ".material");
                 int delaySeconds = Math.max(1, config.getInt(path + ".delay"));
                 int amount = Math.max(1, config.getInt(path + ".amount"));
-                generators.put(id, new Generator(id, world, x, y, z, coin, materialName, delaySeconds, amount));
-            } catch (NumberFormatException ignored) {
+                generators.put(id, new Generator(world, x, y, z, coin, materialName, delaySeconds, amount));
+            } catch (IllegalArgumentException ignored) {
                 // malformed entry from hand-editing the file; skip it
             }
         }
-        plugin.getLogger().info("Loaded " + generators.size() + " item generator(s).");
+        plugin.getLogger().info("Restored " + generators.size() + " active /gen generator(s).");
     }
 
     private void start() {
@@ -127,56 +125,40 @@ public class GeneratorManager {
         return material == null ? Material.STONE : material;
     }
 
+    public boolean isActive(Player player) {
+        return generators.containsKey(player.getUniqueId());
+    }
+
+    public Generator getActive(Player player) {
+        return generators.get(player.getUniqueId());
+    }
+
+    /** Stops this player's active generator, wherever it is. */
+    public void stop(Player player) {
+        generators.remove(player.getUniqueId());
+        save();
+    }
+
     /**
-     * Creates a new generator at the given location and fires it once right
-     * away, OR - if one already exists within 2 blocks - removes that one
-     * instead (a toggle, same pattern as /afk). Returns null when it
-     * removed an existing one.
+     * Starts a new generator for this player at their current location and
+     * fires it once right away. Only call this when isActive(player) is
+     * false - each player may have at most one.
      */
-    public Generator toggle(Location location, boolean coin, String materialName, int delaySeconds, int amount) {
-        Generator nearby = findNear(location);
-        if (nearby != null) {
-            generators.remove(nearby.id);
-            save();
-            return null;
-        }
-        int id = nextId++;
-        Generator gen = new Generator(id, location.getWorld().getName(), location.getX(), location.getY(), location.getZ(),
+    public Generator start(Player player, boolean coin, String materialName, int delaySeconds, int amount) {
+        Location location = player.getLocation();
+        Generator gen = new Generator(location.getWorld().getName(), location.getX(), location.getY(), location.getZ(),
                 coin, materialName, delaySeconds, amount);
-        generators.put(id, gen);
+        generators.put(player.getUniqueId(), gen);
         save();
         spawn(gen);
         return gen;
     }
 
-    public boolean remove(int id) {
-        boolean removed = generators.remove(id) != null;
-        if (removed) save();
-        return removed;
-    }
-
-    public List<Generator> list() {
-        return new ArrayList<>(generators.values());
-    }
-
-    private Generator findNear(Location location) {
-        for (Generator gen : generators.values()) {
-            if (!gen.world.equals(location.getWorld().getName())) continue;
-            double dx = gen.x - location.getX();
-            double dy = gen.y - location.getY();
-            double dz = gen.z - location.getZ();
-            if (dx * dx + dy * dy + dz * dz <= 4.0) { // within 2 blocks
-                return gen;
-            }
-        }
-        return null;
-    }
-
     private void save() {
         config.set("generators", null);
-        config.set("next-id", nextId);
-        for (Generator gen : generators.values()) {
-            String path = "generators." + gen.id;
+        for (Map.Entry<UUID, Generator> entry : generators.entrySet()) {
+            String path = "generators." + entry.getKey();
+            Generator gen = entry.getValue();
             config.set(path + ".world", gen.world);
             config.set(path + ".x", gen.x);
             config.set(path + ".y", gen.y);
