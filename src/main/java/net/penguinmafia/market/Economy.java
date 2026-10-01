@@ -63,6 +63,31 @@ public class Economy {
         return true;
     }
 
+    /**
+     * The top N balances on the server, highest first, for /baltop. Balances
+     * live as raw UUID keys at the config root (see the class comment), while
+     * "autodeposit" and "quietchat" are their own named sub-sections - so
+     * simply skipping any root key that isn't a valid UUID safely excludes
+     * those without needing to know their names here.
+     */
+    public java.util.List<java.util.Map.Entry<java.util.UUID, Long>> getTopBalances(int limit) {
+        java.util.List<java.util.Map.Entry<java.util.UUID, Long>> all = new java.util.ArrayList<>();
+        for (String key : config.getKeys(false)) {
+            java.util.UUID id;
+            try {
+                id = java.util.UUID.fromString(key);
+            } catch (IllegalArgumentException e) {
+                continue;
+            }
+            long balance = config.getLong(key, 0L);
+            if (balance > 0) {
+                all.add(new java.util.AbstractMap.SimpleEntry<>(id, balance));
+            }
+        }
+        all.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        return all.subList(0, Math.min(limit, all.size()));
+    }
+
     public void save() {
         try {
             config.save(file);

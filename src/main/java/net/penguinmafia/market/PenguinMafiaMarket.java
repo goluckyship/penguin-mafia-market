@@ -71,6 +71,16 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
         getCommand("chat").setExecutor(new ChatCommand(economy));
 
+        ShopCommand shopCommand = new ShopCommand(economy);
+        getCommand("shop").setExecutor(shopCommand);
+        getCommand("shop").setTabCompleter(shopCommand);
+
+        getCommand("baltop").setExecutor(new BalTopCommand(economy));
+
+        InfoGUI infoGUI = new InfoGUI(this);
+        getServer().getPluginManager().registerEvents(infoGUI, this);
+        getCommand("info").setExecutor(new InfoCommand(infoGUI));
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

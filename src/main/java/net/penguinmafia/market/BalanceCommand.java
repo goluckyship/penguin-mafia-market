@@ -45,12 +45,14 @@ public class BalanceCommand implements CommandExecutor, TabCompleter {
         String displayName = target.getName() != null ? target.getName() : args[0];
         long balance = economy.getBalance(target);
 
+        String shown = CoinFormat.formatWithExact(balance);
+
         if (self) {
-            sender.sendMessage(ChatColor.AQUA + "Frozen Coin balance: " + ChatColor.BOLD + balance
+            sender.sendMessage(ChatColor.AQUA + "Frozen Coin balance: " + ChatColor.BOLD + shown
                     + ChatColor.RESET + ChatColor.AQUA + " coins");
         } else {
             sender.sendMessage(ChatColor.AQUA + displayName + "'s Frozen Coin balance: " + ChatColor.BOLD
-                    + balance + ChatColor.RESET + ChatColor.AQUA + " coins");
+                    + shown + ChatColor.RESET + ChatColor.AQUA + " coins");
         }
         return true;
     }
