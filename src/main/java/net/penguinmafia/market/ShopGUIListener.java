@@ -75,11 +75,11 @@ public class ShopGUIListener implements Listener {
     private void handleQuantityClick(Player player, ShopGUI.QuantityHolder holder, InventoryClickEvent event) {
         int slot = event.getRawSlot();
 
-        if (slot == 45) {
+        if (slot == 18) {
             shopGUI.openCatalog(player, holder.originPage);
             return;
         }
-        if (slot == 53) {
+        if (slot == 26) {
             player.closeInventory();
             return;
         }

@@ -34,8 +34,8 @@ public class ShopGUI {
     private static final int PAGE_INFO_SLOT = 49;
     private static final int NEXT_SLOT = 53;
 
-    private static final int QTY_BACK_SLOT = 45;
-    private static final int QTY_CLOSE_SLOT = 53;
+    private static final int QTY_BACK_SLOT = 18;
+    private static final int QTY_CLOSE_SLOT = 26;
 
     private final Economy economy;
     private final List<Material> allBlocks;
