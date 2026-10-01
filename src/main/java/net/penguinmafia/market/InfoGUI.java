@@ -87,21 +87,6 @@ public class InfoGUI implements Listener {
         ENTRIES.add(new Entry(Material.CLOCK, "/ptr",
                 ChatColor.GRAY + "Manage passive playtime rewards -",
                 ChatColor.GRAY + "a periodic coin payout for being online."));
-        ENTRIES.add(new Entry(Material.GRASS_BLOCK, "/sandbox (/sb)",
-                ChatColor.GRAY + "Op-only superflat world for testing.",
-                ChatColor.GRAY + "/sandbox back returns you home."));
-        ENTRIES.add(new Entry(Material.RED_BED, "/afk [radius]",
-                ChatColor.GRAY + "Op-only AFK Farm. Keeps chunks loaded,",
-                ChatColor.GRAY + "banks dropped coins (even offline),",
-                ChatColor.GRAY + "and mails you the rest. Run again",
-                ChatColor.GRAY + "anywhere to stop it."));
-        ENTRIES.add(new Entry(Material.DISPENSER, "/gen <item> <secs> <amt>",
-                ChatColor.GRAY + "Op-only item generator at your feet.",
-                ChatColor.GRAY + "Use \"coin\" for real Frozen Coins.",
-                ChatColor.GRAY + "No args stops your active generator."));
-        ENTRIES.add(new Entry(Material.COMMAND_BLOCK, "/coins",
-                ChatColor.GRAY + "Op-only - directly add or remove a",
-                ChatColor.GRAY + "player's Frozen Coin balance."));
         ENTRIES.add(new Entry(Material.KNOWLEDGE_BOOK, "/info",
                 ChatColor.GRAY + "Reopens this menu any time."));
     }
