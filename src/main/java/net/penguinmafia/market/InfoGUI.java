@@ -67,10 +67,10 @@ public class InfoGUI implements Listener {
         ENTRIES.add(new Entry(Material.GOLD_NUGGET, "/coinflip <amount>",
                 ChatColor.GRAY + "Bet coins on a 50/50 flip.",
                 ChatColor.GRAY + "Win doubles it, lose forfeits it."));
-        ENTRIES.add(new Entry(Material.EMERALD, "/shop <block> [amount]",
-                ChatColor.GRAY + "Buy building blocks with your balance.",
-                ChatColor.GRAY + "1,000 coins per stack of 64.",
-                ChatColor.GRAY + "Amount: a number, or 5k / 2.5m / 1b."));
+        ENTRIES.add(new Entry(Material.EMERALD, "/shop",
+                ChatColor.GRAY + "Opens a paged shop GUI - 1,000 coins",
+                ChatColor.GRAY + "per stack. Hover for price, left-click",
+                ChatColor.GRAY + "for a stack, right-click for more."));
         ENTRIES.add(new Entry(Material.HOPPER, "/autodeposit (/ad)",
                 ChatColor.GRAY + "Toggle auto-depositing Frozen Coins",
                 ChatColor.GRAY + "you pick up straight into your balance.",

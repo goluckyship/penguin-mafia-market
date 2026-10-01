@@ -71,9 +71,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
         getCommand("chat").setExecutor(new ChatCommand(economy));
 
-        ShopCommand shopCommand = new ShopCommand(economy);
-        getCommand("shop").setExecutor(shopCommand);
-        getCommand("shop").setTabCompleter(shopCommand);
+        ShopGUI shopGUI = new ShopGUI(economy);
+        getServer().getPluginManager().registerEvents(new ShopGUIListener(shopGUI), this);
+        getCommand("shop").setExecutor(new ShopCommand(shopGUI));
 
         getCommand("baltop").setExecutor(new BalTopCommand(economy));
 
