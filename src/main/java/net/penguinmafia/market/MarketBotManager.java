@@ -425,7 +425,7 @@ public class MarketBotManager {
         // --- Light sources & misc decor ---
         put(Material.TORCH, 1); put(Material.SOUL_TORCH, 6); put(Material.REDSTONE_TORCH, 3);
         put(Material.LANTERN, 12); put(Material.SOUL_LANTERN, 18); put(Material.END_ROD, 20);
-        put(Material.CHAIN, 10); put(Material.IRON_BARS, 8); put(Material.FLOWER_POT, 4);
+        put(Material.IRON_BARS, 8); put(Material.FLOWER_POT, 4);
         put(Material.ITEM_FRAME, 10); put(Material.GLOW_ITEM_FRAME, 25); put(Material.PAINTING, 10);
         put(Material.ARMOR_STAND, 35); put(Material.JUKEBOX, 60); put(Material.BEEHIVE, 25);
         put(Material.BEE_NEST, 20); put(Material.CAULDRON, 20); put(Material.CHEST, 15);
