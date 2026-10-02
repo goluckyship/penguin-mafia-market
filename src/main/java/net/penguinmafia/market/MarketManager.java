@@ -142,6 +142,18 @@ public class MarketManager {
         listings.entrySet().removeIf(entry -> entry.getValue().seller.equals(seller));
     }
 
+    /**
+     * Removes a single listing outright with no side effects - unlike
+     * cancelListing(), nothing is handed back to anyone. Only safe to use on
+     * a system/NPC listing (e.g. merging the Black Market Dealer's
+     * duplicate stacks of the same material back into one listing); never
+     * call this on a real player's listing, since they'd lose the item with
+     * no refund.
+     */
+    public void removeListing(int id) {
+        listings.remove(id);
+    }
+
     /** Cancels a listing and returns the item to the seller (dropped at their feet if inventory is full). */
     public boolean cancelListing(int id, Player requester) {
         Listing listing = listings.get(id);

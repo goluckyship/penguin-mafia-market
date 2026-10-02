@@ -246,10 +246,7 @@ public class MarketBotManager {
      * @return how many item types received new stock this round
      */
     public int refresh() {
-        Map<Material, Listing> existingByMaterial = new HashMap<>();
-        for (Listing listing : market.getListingsBy(SELLER_ID)) {
-            existingByMaterial.putIfAbsent(listing.item.getType(), listing);
-        }
+        Map<Material, Listing> existingByMaterial = consolidateDuplicateListings();
 
         int restocked = 0;
         for (int i = 0; i < TARGET_COUNT; i++) {
@@ -288,6 +285,67 @@ public class MarketBotManager {
         plugin.getLogger().info("Black Market Dealer added stock to " + restocked
                 + " item type(s) (existing listings left in place).");
         return restocked;
+    }
+
+    /**
+     * Folds any leftover duplicate dealer listings of the same material into
+     * a single listing before this round's rolls run. Mainly a one-time
+     * cleanup for stock that piled up as separate listings under the old
+     * wipe-and-relist behavior (so stacking is visible right away instead
+     * of quietly topping up just one listing buried among old duplicates),
+     * but it's also a standing safety net against anything else ever
+     * producing more than one dealer listing per material. Combined
+     * quantity is capped at the material's max stack size, with the price
+     * scaled down to match whatever had to be left off; the extra listings
+     * are deleted outright via removeListing(), which is safe here only
+     * because the Black Market Dealer isn't a real player with an item to
+     * hand back.
+     *
+     * @return one entry per material the dealer currently stocks, pointing
+     *         at its single (now-consolidated) listing
+     */
+    private Map<Material, Listing> consolidateDuplicateListings() {
+        Map<Material, List<Listing>> byMaterial = new HashMap<>();
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            byMaterial.computeIfAbsent(listing.item.getType(), m -> new ArrayList<>()).add(listing);
+        }
+
+        Map<Material, Listing> result = new HashMap<>();
+        for (Map.Entry<Material, List<Listing>> entry : byMaterial.entrySet()) {
+            Material material = entry.getKey();
+            List<Listing> duplicates = entry.getValue();
+            if (duplicates.size() == 1) {
+                result.put(material, duplicates.get(0));
+                continue;
+            }
+
+            duplicates.sort((a, b) -> Integer.compare(a.id, b.id));
+            Listing keeper = duplicates.get(0);
+
+            long totalAmount = 0;
+            long totalPrice = 0;
+            for (Listing listing : duplicates) {
+                totalAmount += listing.item.getAmount();
+                totalPrice += listing.price;
+            }
+
+            int maxStack = material.getMaxStackSize();
+            if (totalAmount > maxStack) {
+                // Scale the price down to match only the quantity that actually
+                // fits, instead of charging full combined price for a capped stack.
+                totalPrice = Math.max(1, Math.round(totalPrice * (maxStack / (double) totalAmount)));
+                totalAmount = maxStack;
+            }
+
+            keeper.item.setAmount((int) totalAmount);
+            keeper.price = totalPrice;
+            for (int i = 1; i < duplicates.size(); i++) {
+                market.removeListing(duplicates.get(i).id);
+            }
+
+            result.put(material, keeper);
+        }
+        return result;
     }
 
     /**
