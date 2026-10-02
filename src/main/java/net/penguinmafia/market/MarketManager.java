@@ -118,6 +118,30 @@ public class MarketManager {
         return listing;
     }
 
+    /**
+     * Lists an item under a system/NPC seller (e.g. the Black Market Dealer)
+     * rather than a real player - no item is taken from any inventory, since
+     * there's no player to take it from. Does NOT call save() - callers doing
+     * this in bulk (hundreds/thousands of listings at once) should add them
+     * all first and call save() once at the end, rather than writing
+     * listings.yml to disk on every single listing.
+     */
+    public Listing createSystemListing(UUID seller, String sellerName, ItemStack item, long price) {
+        int id = nextId++;
+        Listing listing = new Listing(id, seller, sellerName, item.clone(), price);
+        listings.put(id, listing);
+        return listing;
+    }
+
+    /**
+     * Removes every listing belonging to the given seller UUID (used to clear
+     * a system seller's old stock before restocking). Does NOT call save() -
+     * pair with a save() once the caller is done making its batch of changes.
+     */
+    public void removeListingsBySeller(UUID seller) {
+        listings.entrySet().removeIf(entry -> entry.getValue().seller.equals(seller));
+    }
+
     /** Cancels a listing and returns the item to the seller (dropped at their feet if inventory is full). */
     public boolean cancelListing(int id, Player requester) {
         Listing listing = listings.get(id);
@@ -138,14 +162,21 @@ public class MarketManager {
         listings.remove(id);
         save();
 
-        OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.seller);
-        economy.addBalance(seller, listing.price);
         giveOrDrop(buyer, listing.item);
 
-        Player sellerOnline = Bukkit.getPlayer(listing.seller);
-        if (sellerOnline != null) {
-            sellerOnline.sendMessage("§b[Black Market] §7" + buyer.getName() + " bought your "
-                    + listing.item.getType() + " for §b" + listing.price + " Frozen Coins§7.");
+        // The Black Market Dealer isn't a real player - buying from its stock
+        // sinks the coins out of the economy instead of crediting anyone,
+        // rather than quietly piling up a balance on a fake account that
+        // would otherwise show up as a ghost entry on /baltop.
+        if (!listing.seller.equals(MarketBotManager.SELLER_ID)) {
+            OfflinePlayer seller = Bukkit.getOfflinePlayer(listing.seller);
+            economy.addBalance(seller, listing.price);
+
+            Player sellerOnline = Bukkit.getPlayer(listing.seller);
+            if (sellerOnline != null) {
+                sellerOnline.sendMessage("§b[Black Market] §7" + buyer.getName() + " bought your "
+                        + listing.item.getType() + " for §b" + listing.price + " Frozen Coins§7.");
+            }
         }
         return true;
     }

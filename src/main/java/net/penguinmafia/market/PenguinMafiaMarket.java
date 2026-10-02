@@ -16,6 +16,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getDataFolder().mkdirs();
         this.economy = new Economy(this);
         this.marketManager = new MarketManager(this, economy);
+        MarketBotManager.start(this, marketManager);
 
         MarketPreferencesManager marketPreferencesManager = new MarketPreferencesManager(this);
         MarketGUI marketGUI = new MarketGUI(marketManager, marketPreferencesManager);
