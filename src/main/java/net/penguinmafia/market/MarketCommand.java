@@ -18,12 +18,15 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     private final Economy economy;
     private final MarketManager market;
     private final MarketGUI gui;
+    private final MarketBotManager marketBotManager;
 
-    public MarketCommand(PenguinMafiaMarket plugin, Economy economy, MarketManager market, MarketGUI gui) {
+    public MarketCommand(PenguinMafiaMarket plugin, Economy economy, MarketManager market, MarketGUI gui,
+                          MarketBotManager marketBotManager) {
         this.plugin = plugin;
         this.economy = economy;
         this.market = market;
         this.gui = gui;
+        this.marketBotManager = marketBotManager;
     }
 
     @Override
@@ -48,6 +51,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
                 return true;
             case "search":
                 return handleSearch(player, args);
+            case "restock":
+                return handleRestock(player);
             case "cancel":
                 return handleCancel(player, args);
             case "balance":
@@ -123,6 +128,24 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         gui.openWithSearch(player, query);
         player.sendMessage(ChatColor.GRAY + "Searching the Black Market for: " + ChatColor.WHITE + query);
+        return true;
+    }
+
+    /**
+     * Op-only manual trigger for the Black Market Dealer's restock - runs
+     * the exact same top-up logic as the automatic 10-minute timer
+     * (MarketBotManager.refresh()), immediately, without touching any
+     * existing listing that hasn't sold yet.
+     */
+    private boolean handleRestock(Player player) {
+        if (!player.isOp()) {
+            player.sendMessage(ChatColor.RED + "Only ops can force a Black Market restock.");
+            return true;
+        }
+        int restocked = marketBotManager.refresh();
+        player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
+                + "Restocked the dealer - added stock to " + ChatColor.AQUA + restocked + ChatColor.GRAY
+                + " item type(s).");
         return true;
     }
 
@@ -253,6 +276,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GRAY + "/bm sell <price> " + ChatColor.WHITE + "- list the item in your hand");
         player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- manage your listings (cancel with a click)");
         player.sendMessage(ChatColor.GRAY + "/bm search <item> " + ChatColor.WHITE + "- jump straight to a search (same as the GUI's Search button)");
+        player.sendMessage(ChatColor.GRAY + "/bm restock " + ChatColor.WHITE + "- (op only) force the Black Market Dealer to add another round of stock now");
         player.sendMessage(ChatColor.GRAY + "/bm cancel <id> " + ChatColor.WHITE + "- cancel a listing");
         player.sendMessage(ChatColor.GRAY + "/bm balance " + ChatColor.WHITE + "- check your coin balance");
         player.sendMessage(ChatColor.GRAY + "/bm deposit " + ChatColor.WHITE + "- turn held coins into balance");
@@ -270,7 +294,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(Arrays.asList("sell", "list", "search", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
+            return filter(Arrays.asList("sell", "list", "search", "restock", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
         }
         return new ArrayList<>();
     }

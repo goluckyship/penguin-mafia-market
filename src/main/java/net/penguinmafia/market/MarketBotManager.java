@@ -6,6 +6,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +17,13 @@ import java.util.UUID;
 /**
  * Keeps the Black Market feeling alive even when no real players are
  * selling: every REFRESH_INTERVAL, the "Black Market Dealer" (a system
- * seller, not a real player) clears its old stock and lists a fresh batch
- * of up to TARGET_COUNT listings, pulled at random from a curated,
- * vanilla-survival-obtainable item pool and priced off BASE_PRICES.
+ * seller, not a real player) rolls a fresh batch of up to TARGET_COUNT
+ * items from a curated, vanilla-survival-obtainable item pool, priced off
+ * BASE_PRICES, and adds them on top of whatever it already has listed -
+ * topping up its existing listing for a material (more quantity, more
+ * price) instead of deleting and relisting everything from scratch. Past,
+ * still-unsold listings are never removed or replaced by a restock; an op
+ * can also trigger an extra round early with /bm restock.
  *
  * Deliberately excludes anything creative-only, admin-only, or otherwise
  * not obtainable by a normal survival player - no dragon eggs, spawners,
@@ -213,7 +218,7 @@ public class MarketBotManager {
     }
 
     /** Starts the restock timer - an immediate first stock, then every REFRESH_INTERVAL after that. */
-    public static void start(PenguinMafiaMarket plugin, MarketManager market) {
+    public static MarketBotManager start(PenguinMafiaMarket plugin, MarketManager market) {
         MarketBotManager manager = new MarketBotManager(plugin, market);
         new BukkitRunnable() {
             @Override
@@ -221,29 +226,68 @@ public class MarketBotManager {
                 manager.refresh();
             }
         }.runTaskTimer(plugin, 100L, REFRESH_INTERVAL_TICKS);
+        return manager;
     }
 
-    /** Clears the dealer's current stock and lists a fresh, randomly-rolled batch in its place. */
-    public void refresh() {
-        market.removeListingsBySeller(SELLER_ID);
+    /**
+     * Rolls a fresh batch of up to TARGET_COUNT items and adds them to the
+     * dealer's stock - never wipes or replaces what's already listed. For
+     * each roll, an existing dealer listing of that same material gets
+     * topped up (its quantity and price both increased) instead of a brand
+     * new listing being created next to it; a material only gets a new
+     * listing the first time it comes up, or again later if every earlier
+     * listing of it happened to get fully bought out. Once a material's
+     * listing is already sitting at a full stack, further rolls of it this
+     * round are skipped rather than spawning a second listing for the
+     * overflow. Also the handler behind the op-only /bm restock command, so
+     * the exact same logic runs whether it's the timer or a person firing
+     * it early.
+     *
+     * @return how many item types received new stock this round
+     */
+    public int refresh() {
+        Map<Material, Listing> existingByMaterial = new HashMap<>();
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            existingByMaterial.putIfAbsent(listing.item.getType(), listing);
+        }
 
-        int listed = 0;
+        int restocked = 0;
         for (int i = 0; i < TARGET_COUNT; i++) {
             Material material = pool.get(random.nextInt(pool.size()));
             if (BLOCKED.contains(material)) continue; // safety net, should never actually trigger
 
             long unitPrice = BASE_PRICES.get(material);
-            int amount = rollAmount(unitPrice, material);
+            int rolled = rollAmount(unitPrice, material);
             // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
             double variance = 0.85 + random.nextDouble() * 0.30;
-            long price = Math.max(1, Math.round(unitPrice * amount * variance));
+            int maxStack = material.getMaxStackSize();
 
-            market.createSystemListing(SELLER_ID, SELLER_NAME, new ItemStack(material, amount), price);
-            listed++;
+            Listing existing = existingByMaterial.get(material);
+            if (existing != null) {
+                int currentAmount = existing.item.getAmount();
+                if (currentAmount >= maxStack) continue; // already a full stack, skip this roll
+
+                int added = Math.min(rolled, maxStack - currentAmount);
+                long addedPrice = Math.max(1, Math.round(unitPrice * added * variance));
+
+                existing.item.setAmount(currentAmount + added);
+                existing.price += addedPrice;
+                restocked++;
+            } else {
+                int amount = Math.min(rolled, maxStack);
+                long price = Math.max(1, Math.round(unitPrice * amount * variance));
+
+                Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
+                        new ItemStack(material, amount), price);
+                existingByMaterial.put(material, created);
+                restocked++;
+            }
         }
 
         market.save();
-        plugin.getLogger().info("Black Market Dealer restocked " + listed + " listings.");
+        plugin.getLogger().info("Black Market Dealer added stock to " + restocked
+                + " item type(s) (existing listings left in place).");
+        return restocked;
     }
 
     /**
