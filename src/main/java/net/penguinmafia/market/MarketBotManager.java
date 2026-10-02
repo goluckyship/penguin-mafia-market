@@ -193,6 +193,286 @@ public class MarketBotManager {
         put(Material.MUSIC_DISC_WARD, 500); put(Material.MUSIC_DISC_11, 500); put(Material.MUSIC_DISC_WAIT, 500);
         put(Material.MUSIC_DISC_PIGSTEP, 800); put(Material.MUSIC_DISC_OTHERSIDE, 800);
         put(Material.MUSIC_DISC_5, 800); put(Material.MUSIC_DISC_RELIC, 800);
+        put(Material.DISC_FRAGMENT_5, 350);
+
+        // ================================================================
+        // Everything below was added to make the dealer carry close to the
+        // full range of vanilla-survival-obtainable items - every ordinary
+        // wood/stone build style, every dye/color variant of the
+        // decorative blocks, and a long tail of individual items that
+        // didn't fit neatly into the categories above. Still excludes
+        // anything creative-only or otherwise not obtainable on a normal
+        // survival server (see BLOCKED and the class javadoc).
+        // ================================================================
+
+        // --- Stairs: one entry per wood/stone style a player can actually craft ---
+        put(Material.SPRUCE_STAIRS, 4); put(Material.BIRCH_STAIRS, 4);
+        put(Material.JUNGLE_STAIRS, 4); put(Material.ACACIA_STAIRS, 4);
+        put(Material.DARK_OAK_STAIRS, 4); put(Material.MANGROVE_STAIRS, 4);
+        put(Material.CHERRY_STAIRS, 5); put(Material.BAMBOO_STAIRS, 4);
+        put(Material.CRIMSON_STAIRS, 9); put(Material.WARPED_STAIRS, 9);
+        put(Material.COBBLESTONE_STAIRS, 3); put(Material.MOSSY_COBBLESTONE_STAIRS, 11);
+        put(Material.STONE_BRICK_STAIRS, 4); put(Material.MOSSY_STONE_BRICK_STAIRS, 11);
+        put(Material.SANDSTONE_STAIRS, 5); put(Material.SMOOTH_SANDSTONE_STAIRS, 5);
+        put(Material.RED_SANDSTONE_STAIRS, 5); put(Material.SMOOTH_RED_SANDSTONE_STAIRS, 5);
+        put(Material.GRANITE_STAIRS, 4); put(Material.POLISHED_GRANITE_STAIRS, 4);
+        put(Material.DIORITE_STAIRS, 4); put(Material.POLISHED_DIORITE_STAIRS, 4);
+        put(Material.ANDESITE_STAIRS, 4); put(Material.POLISHED_ANDESITE_STAIRS, 4);
+        put(Material.BRICK_STAIRS, 6); put(Material.NETHER_BRICK_STAIRS, 6);
+        put(Material.RED_NETHER_BRICK_STAIRS, 7); put(Material.QUARTZ_STAIRS, 18);
+        put(Material.SMOOTH_QUARTZ_STAIRS, 18); put(Material.PURPUR_STAIRS, 25);
+        put(Material.PRISMARINE_STAIRS, 14); put(Material.PRISMARINE_BRICK_STAIRS, 18);
+        put(Material.DARK_PRISMARINE_STAIRS, 18); put(Material.END_STONE_BRICK_STAIRS, 14);
+        put(Material.BLACKSTONE_STAIRS, 5); put(Material.POLISHED_BLACKSTONE_STAIRS, 5);
+        put(Material.POLISHED_BLACKSTONE_BRICK_STAIRS, 5); put(Material.MUD_BRICK_STAIRS, 6);
+        put(Material.COBBLED_DEEPSLATE_STAIRS, 5); put(Material.POLISHED_DEEPSLATE_STAIRS, 5);
+        put(Material.DEEPSLATE_BRICK_STAIRS, 5); put(Material.DEEPSLATE_TILE_STAIRS, 6);
+        put(Material.CUT_COPPER_STAIRS, 17); put(Material.EXPOSED_CUT_COPPER_STAIRS, 17);
+        put(Material.WEATHERED_CUT_COPPER_STAIRS, 17); put(Material.OXIDIZED_CUT_COPPER_STAIRS, 17);
+        put(Material.WAXED_CUT_COPPER_STAIRS, 18); put(Material.WAXED_EXPOSED_CUT_COPPER_STAIRS, 18);
+        put(Material.WAXED_WEATHERED_CUT_COPPER_STAIRS, 18); put(Material.WAXED_OXIDIZED_CUT_COPPER_STAIRS, 18);
+
+        // --- Slabs: the same build-style sets, half-height ---
+        put(Material.OAK_SLAB, 2); put(Material.SPRUCE_SLAB, 2); put(Material.BIRCH_SLAB, 2);
+        put(Material.JUNGLE_SLAB, 2); put(Material.ACACIA_SLAB, 2); put(Material.DARK_OAK_SLAB, 2);
+        put(Material.MANGROVE_SLAB, 2); put(Material.CHERRY_SLAB, 3); put(Material.BAMBOO_SLAB, 2);
+        put(Material.BAMBOO_MOSAIC_SLAB, 3); put(Material.CRIMSON_SLAB, 5); put(Material.WARPED_SLAB, 5);
+        put(Material.COBBLESTONE_SLAB, 2); put(Material.MOSSY_COBBLESTONE_SLAB, 6);
+        put(Material.STONE_SLAB, 2); put(Material.SMOOTH_STONE_SLAB, 2);
+        put(Material.STONE_BRICK_SLAB, 2); put(Material.MOSSY_STONE_BRICK_SLAB, 6);
+        put(Material.SANDSTONE_SLAB, 3); put(Material.SMOOTH_SANDSTONE_SLAB, 3);
+        put(Material.CUT_SANDSTONE_SLAB, 3); put(Material.RED_SANDSTONE_SLAB, 3);
+        put(Material.SMOOTH_RED_SANDSTONE_SLAB, 3); put(Material.CUT_RED_SANDSTONE_SLAB, 3);
+        put(Material.GRANITE_SLAB, 2); put(Material.POLISHED_GRANITE_SLAB, 2);
+        put(Material.DIORITE_SLAB, 2); put(Material.POLISHED_DIORITE_SLAB, 2);
+        put(Material.ANDESITE_SLAB, 2); put(Material.POLISHED_ANDESITE_SLAB, 2);
+        put(Material.BRICK_SLAB, 3); put(Material.NETHER_BRICK_SLAB, 3);
+        put(Material.RED_NETHER_BRICK_SLAB, 4); put(Material.QUARTZ_SLAB, 9);
+        put(Material.SMOOTH_QUARTZ_SLAB, 9); put(Material.PURPUR_SLAB, 13);
+        put(Material.PRISMARINE_SLAB, 7); put(Material.PRISMARINE_BRICK_SLAB, 9);
+        put(Material.DARK_PRISMARINE_SLAB, 9); put(Material.END_STONE_BRICK_SLAB, 7);
+        put(Material.BLACKSTONE_SLAB, 3); put(Material.POLISHED_BLACKSTONE_SLAB, 3);
+        put(Material.POLISHED_BLACKSTONE_BRICK_SLAB, 3); put(Material.MUD_BRICK_SLAB, 3);
+        put(Material.COBBLED_DEEPSLATE_SLAB, 3); put(Material.POLISHED_DEEPSLATE_SLAB, 3);
+        put(Material.DEEPSLATE_BRICK_SLAB, 3); put(Material.DEEPSLATE_TILE_SLAB, 3);
+        put(Material.CUT_COPPER_SLAB, 9); put(Material.EXPOSED_CUT_COPPER_SLAB, 9);
+        put(Material.WEATHERED_CUT_COPPER_SLAB, 9); put(Material.OXIDIZED_CUT_COPPER_SLAB, 9);
+        put(Material.WAXED_CUT_COPPER_SLAB, 9); put(Material.WAXED_EXPOSED_CUT_COPPER_SLAB, 9);
+        put(Material.WAXED_WEATHERED_CUT_COPPER_SLAB, 9); put(Material.WAXED_OXIDIZED_CUT_COPPER_SLAB, 9);
+
+        // --- Walls ---
+        put(Material.COBBLESTONE_WALL, 3); put(Material.MOSSY_COBBLESTONE_WALL, 8);
+        put(Material.STONE_BRICK_WALL, 3); put(Material.MOSSY_STONE_BRICK_WALL, 8);
+        put(Material.GRANITE_WALL, 3); put(Material.DIORITE_WALL, 3); put(Material.ANDESITE_WALL, 3);
+        put(Material.SANDSTONE_WALL, 4); put(Material.RED_SANDSTONE_WALL, 4);
+        put(Material.BRICK_WALL, 5); put(Material.NETHER_BRICK_WALL, 5); put(Material.RED_NETHER_BRICK_WALL, 6);
+        put(Material.PRISMARINE_WALL, 11); put(Material.END_STONE_BRICK_WALL, 11);
+        put(Material.BLACKSTONE_WALL, 4); put(Material.POLISHED_BLACKSTONE_WALL, 4);
+        put(Material.POLISHED_BLACKSTONE_BRICK_WALL, 4); put(Material.MUD_BRICK_WALL, 4);
+        put(Material.COBBLED_DEEPSLATE_WALL, 4); put(Material.POLISHED_DEEPSLATE_WALL, 4);
+        put(Material.DEEPSLATE_BRICK_WALL, 4); put(Material.DEEPSLATE_TILE_WALL, 4);
+
+        // --- Fences & gates ---
+        put(Material.SPRUCE_FENCE, 3); put(Material.BIRCH_FENCE, 3); put(Material.JUNGLE_FENCE, 3);
+        put(Material.ACACIA_FENCE, 3); put(Material.DARK_OAK_FENCE, 3); put(Material.MANGROVE_FENCE, 3);
+        put(Material.CHERRY_FENCE, 4); put(Material.BAMBOO_FENCE, 3);
+        put(Material.CRIMSON_FENCE, 8); put(Material.WARPED_FENCE, 8); put(Material.NETHER_BRICK_FENCE, 5);
+        put(Material.OAK_FENCE_GATE, 3); put(Material.SPRUCE_FENCE_GATE, 3); put(Material.BIRCH_FENCE_GATE, 3);
+        put(Material.JUNGLE_FENCE_GATE, 3); put(Material.ACACIA_FENCE_GATE, 3); put(Material.DARK_OAK_FENCE_GATE, 3);
+        put(Material.MANGROVE_FENCE_GATE, 3); put(Material.CHERRY_FENCE_GATE, 4); put(Material.BAMBOO_FENCE_GATE, 3);
+        put(Material.CRIMSON_FENCE_GATE, 8); put(Material.WARPED_FENCE_GATE, 8);
+
+        // --- Doors & trapdoors ---
+        put(Material.OAK_DOOR, 4); put(Material.SPRUCE_DOOR, 4); put(Material.BIRCH_DOOR, 4);
+        put(Material.JUNGLE_DOOR, 4); put(Material.ACACIA_DOOR, 4); put(Material.DARK_OAK_DOOR, 4);
+        put(Material.MANGROVE_DOOR, 4); put(Material.CHERRY_DOOR, 5); put(Material.BAMBOO_DOOR, 4);
+        put(Material.CRIMSON_DOOR, 9); put(Material.WARPED_DOOR, 9); put(Material.IRON_DOOR, 70);
+        put(Material.OAK_TRAPDOOR, 4); put(Material.SPRUCE_TRAPDOOR, 4); put(Material.BIRCH_TRAPDOOR, 4);
+        put(Material.JUNGLE_TRAPDOOR, 4); put(Material.ACACIA_TRAPDOOR, 4); put(Material.DARK_OAK_TRAPDOOR, 4);
+        put(Material.MANGROVE_TRAPDOOR, 4); put(Material.CHERRY_TRAPDOOR, 5); put(Material.BAMBOO_TRAPDOOR, 4);
+        put(Material.CRIMSON_TRAPDOOR, 9); put(Material.WARPED_TRAPDOOR, 9); put(Material.IRON_TRAPDOOR, 70);
+
+        // --- Dyes - every color, since they're the input to half the blocks below ---
+        put(Material.WHITE_DYE, 4); put(Material.ORANGE_DYE, 5); put(Material.MAGENTA_DYE, 6);
+        put(Material.LIGHT_BLUE_DYE, 5); put(Material.YELLOW_DYE, 5); put(Material.LIME_DYE, 5);
+        put(Material.PINK_DYE, 5); put(Material.GRAY_DYE, 5); put(Material.LIGHT_GRAY_DYE, 5);
+        put(Material.CYAN_DYE, 6); put(Material.PURPLE_DYE, 6); put(Material.BLUE_DYE, 6);
+        put(Material.BROWN_DYE, 5); put(Material.GREEN_DYE, 5); put(Material.RED_DYE, 5);
+        put(Material.BLACK_DYE, 5); put(Material.BONE_MEAL, 3);
+
+        // --- Colored blocks: carpets, beds, banners, candles, stained glass + panes ---
+        put(Material.WHITE_CARPET, 3); put(Material.ORANGE_CARPET, 3); put(Material.MAGENTA_CARPET, 3);
+        put(Material.LIGHT_BLUE_CARPET, 3); put(Material.YELLOW_CARPET, 3); put(Material.LIME_CARPET, 3);
+        put(Material.PINK_CARPET, 3); put(Material.GRAY_CARPET, 3); put(Material.LIGHT_GRAY_CARPET, 3);
+        put(Material.CYAN_CARPET, 3); put(Material.PURPLE_CARPET, 3); put(Material.BLUE_CARPET, 3);
+        put(Material.BROWN_CARPET, 3); put(Material.GREEN_CARPET, 3); put(Material.RED_CARPET, 3);
+        put(Material.BLACK_CARPET, 3);
+        put(Material.WHITE_BED, 15); put(Material.ORANGE_BED, 15); put(Material.MAGENTA_BED, 15);
+        put(Material.LIGHT_BLUE_BED, 15); put(Material.YELLOW_BED, 15); put(Material.LIME_BED, 15);
+        put(Material.PINK_BED, 15); put(Material.GRAY_BED, 15); put(Material.LIGHT_GRAY_BED, 15);
+        put(Material.CYAN_BED, 15); put(Material.PURPLE_BED, 15); put(Material.BLUE_BED, 15);
+        put(Material.BROWN_BED, 15); put(Material.GREEN_BED, 15); put(Material.RED_BED, 15);
+        put(Material.BLACK_BED, 15);
+        put(Material.WHITE_BANNER, 14); put(Material.ORANGE_BANNER, 14); put(Material.MAGENTA_BANNER, 14);
+        put(Material.LIGHT_BLUE_BANNER, 14); put(Material.YELLOW_BANNER, 14); put(Material.LIME_BANNER, 14);
+        put(Material.PINK_BANNER, 14); put(Material.GRAY_BANNER, 14); put(Material.LIGHT_GRAY_BANNER, 14);
+        put(Material.CYAN_BANNER, 14); put(Material.PURPLE_BANNER, 14); put(Material.BLUE_BANNER, 14);
+        put(Material.BROWN_BANNER, 14); put(Material.GREEN_BANNER, 14); put(Material.RED_BANNER, 14);
+        put(Material.BLACK_BANNER, 14);
+        put(Material.CANDLE, 6); put(Material.WHITE_CANDLE, 6); put(Material.ORANGE_CANDLE, 6);
+        put(Material.MAGENTA_CANDLE, 6); put(Material.LIGHT_BLUE_CANDLE, 6); put(Material.YELLOW_CANDLE, 6);
+        put(Material.LIME_CANDLE, 6); put(Material.PINK_CANDLE, 6); put(Material.GRAY_CANDLE, 6);
+        put(Material.LIGHT_GRAY_CANDLE, 6); put(Material.CYAN_CANDLE, 6); put(Material.PURPLE_CANDLE, 6);
+        put(Material.BLUE_CANDLE, 6); put(Material.BROWN_CANDLE, 6); put(Material.GREEN_CANDLE, 6);
+        put(Material.RED_CANDLE, 6); put(Material.BLACK_CANDLE, 6);
+        put(Material.SHULKER_BOX, 950); put(Material.WHITE_SHULKER_BOX, 960); put(Material.ORANGE_SHULKER_BOX, 960);
+        put(Material.MAGENTA_SHULKER_BOX, 960); put(Material.LIGHT_BLUE_SHULKER_BOX, 960); put(Material.YELLOW_SHULKER_BOX, 960);
+        put(Material.LIME_SHULKER_BOX, 960); put(Material.PINK_SHULKER_BOX, 960); put(Material.GRAY_SHULKER_BOX, 960);
+        put(Material.LIGHT_GRAY_SHULKER_BOX, 960); put(Material.CYAN_SHULKER_BOX, 960); put(Material.PURPLE_SHULKER_BOX, 960);
+        put(Material.BLUE_SHULKER_BOX, 960); put(Material.BROWN_SHULKER_BOX, 960); put(Material.GREEN_SHULKER_BOX, 960);
+        put(Material.RED_SHULKER_BOX, 960); put(Material.BLACK_SHULKER_BOX, 960);
+        put(Material.WHITE_STAINED_GLASS, 5); put(Material.ORANGE_STAINED_GLASS, 5); put(Material.MAGENTA_STAINED_GLASS, 5);
+        put(Material.LIGHT_BLUE_STAINED_GLASS, 5); put(Material.YELLOW_STAINED_GLASS, 5); put(Material.LIME_STAINED_GLASS, 5);
+        put(Material.PINK_STAINED_GLASS, 5); put(Material.GRAY_STAINED_GLASS, 5); put(Material.LIGHT_GRAY_STAINED_GLASS, 5);
+        put(Material.CYAN_STAINED_GLASS, 5); put(Material.PURPLE_STAINED_GLASS, 5); put(Material.BLUE_STAINED_GLASS, 5);
+        put(Material.BROWN_STAINED_GLASS, 5); put(Material.GREEN_STAINED_GLASS, 5); put(Material.RED_STAINED_GLASS, 5);
+        put(Material.BLACK_STAINED_GLASS, 5);
+        put(Material.WHITE_STAINED_GLASS_PANE, 2); put(Material.ORANGE_STAINED_GLASS_PANE, 2);
+        put(Material.MAGENTA_STAINED_GLASS_PANE, 2); put(Material.LIGHT_BLUE_STAINED_GLASS_PANE, 2);
+        put(Material.YELLOW_STAINED_GLASS_PANE, 2); put(Material.LIME_STAINED_GLASS_PANE, 2);
+        put(Material.PINK_STAINED_GLASS_PANE, 2); put(Material.GRAY_STAINED_GLASS_PANE, 2);
+        put(Material.LIGHT_GRAY_STAINED_GLASS_PANE, 2); put(Material.CYAN_STAINED_GLASS_PANE, 2);
+        put(Material.PURPLE_STAINED_GLASS_PANE, 2); put(Material.BLUE_STAINED_GLASS_PANE, 2);
+        put(Material.BROWN_STAINED_GLASS_PANE, 2); put(Material.GREEN_STAINED_GLASS_PANE, 2);
+        put(Material.RED_STAINED_GLASS_PANE, 2); put(Material.BLACK_STAINED_GLASS_PANE, 2);
+        put(Material.GLASS_PANE, 2); put(Material.TINTED_GLASS, 10);
+
+        // --- Remaining concrete/concrete powder/terracotta/glazed terracotta colors ---
+        put(Material.ORANGE_CONCRETE, 8); put(Material.MAGENTA_CONCRETE, 8); put(Material.LIGHT_BLUE_CONCRETE, 8);
+        put(Material.YELLOW_CONCRETE, 8); put(Material.LIME_CONCRETE, 8); put(Material.PINK_CONCRETE, 8);
+        put(Material.GRAY_CONCRETE, 8); put(Material.LIGHT_GRAY_CONCRETE, 8); put(Material.CYAN_CONCRETE, 8);
+        put(Material.PURPLE_CONCRETE, 8); put(Material.BROWN_CONCRETE, 8); put(Material.GREEN_CONCRETE, 8);
+        put(Material.WHITE_CONCRETE_POWDER, 6); put(Material.ORANGE_CONCRETE_POWDER, 6);
+        put(Material.MAGENTA_CONCRETE_POWDER, 6); put(Material.LIGHT_BLUE_CONCRETE_POWDER, 6);
+        put(Material.YELLOW_CONCRETE_POWDER, 6); put(Material.LIME_CONCRETE_POWDER, 6);
+        put(Material.PINK_CONCRETE_POWDER, 6); put(Material.GRAY_CONCRETE_POWDER, 6);
+        put(Material.LIGHT_GRAY_CONCRETE_POWDER, 6); put(Material.CYAN_CONCRETE_POWDER, 6);
+        put(Material.PURPLE_CONCRETE_POWDER, 6); put(Material.BLUE_CONCRETE_POWDER, 6);
+        put(Material.BROWN_CONCRETE_POWDER, 6); put(Material.GREEN_CONCRETE_POWDER, 6);
+        put(Material.RED_CONCRETE_POWDER, 6); put(Material.BLACK_CONCRETE_POWDER, 6);
+        put(Material.ORANGE_TERRACOTTA, 5); put(Material.MAGENTA_TERRACOTTA, 5); put(Material.LIGHT_BLUE_TERRACOTTA, 5);
+        put(Material.YELLOW_TERRACOTTA, 5); put(Material.LIME_TERRACOTTA, 5); put(Material.PINK_TERRACOTTA, 5);
+        put(Material.GRAY_TERRACOTTA, 5); put(Material.LIGHT_GRAY_TERRACOTTA, 5); put(Material.CYAN_TERRACOTTA, 5);
+        put(Material.PURPLE_TERRACOTTA, 5); put(Material.BROWN_TERRACOTTA, 5); put(Material.GREEN_TERRACOTTA, 5);
+        put(Material.RED_TERRACOTTA, 5); put(Material.BLACK_TERRACOTTA, 5);
+        put(Material.ORANGE_GLAZED_TERRACOTTA, 20); put(Material.MAGENTA_GLAZED_TERRACOTTA, 20);
+        put(Material.LIGHT_BLUE_GLAZED_TERRACOTTA, 20); put(Material.YELLOW_GLAZED_TERRACOTTA, 20);
+        put(Material.LIME_GLAZED_TERRACOTTA, 20); put(Material.PINK_GLAZED_TERRACOTTA, 20);
+        put(Material.GRAY_GLAZED_TERRACOTTA, 20); put(Material.LIGHT_GRAY_GLAZED_TERRACOTTA, 20);
+        put(Material.CYAN_GLAZED_TERRACOTTA, 20); put(Material.PURPLE_GLAZED_TERRACOTTA, 20);
+        put(Material.BROWN_GLAZED_TERRACOTTA, 20); put(Material.GREEN_GLAZED_TERRACOTTA, 20);
+        put(Material.RED_GLAZED_TERRACOTTA, 20); put(Material.BLACK_GLAZED_TERRACOTTA, 20);
+
+        // --- Copper family: every oxidation stage, waxed and not ---
+        put(Material.COPPER_BLOCK, 16); put(Material.EXPOSED_COPPER, 16); put(Material.WEATHERED_COPPER, 16);
+        put(Material.OXIDIZED_COPPER, 16); put(Material.WAXED_COPPER_BLOCK, 17); put(Material.WAXED_EXPOSED_COPPER, 17);
+        put(Material.WAXED_WEATHERED_COPPER, 17); put(Material.WAXED_OXIDIZED_COPPER, 17);
+        put(Material.CUT_COPPER, 17); put(Material.EXPOSED_CUT_COPPER, 17); put(Material.WEATHERED_CUT_COPPER, 17);
+        put(Material.OXIDIZED_CUT_COPPER, 17); put(Material.WAXED_CUT_COPPER, 18); put(Material.WAXED_EXPOSED_CUT_COPPER, 18);
+        put(Material.WAXED_WEATHERED_CUT_COPPER, 18); put(Material.WAXED_OXIDIZED_CUT_COPPER, 18);
+        put(Material.RAW_COPPER, 12); put(Material.RAW_COPPER_BLOCK, 100);
+        put(Material.RAW_IRON, 26); put(Material.RAW_IRON_BLOCK, 230);
+        put(Material.RAW_GOLD, 55); put(Material.RAW_GOLD_BLOCK, 480);
+        put(Material.LIGHTNING_ROD, 40);
+
+        // --- Ore blocks (both stone and deepslate variants) - decoration as much as resource ---
+        put(Material.COAL_ORE, 20); put(Material.DEEPSLATE_COAL_ORE, 22);
+        put(Material.IRON_ORE, 34); put(Material.DEEPSLATE_IRON_ORE, 38);
+        put(Material.COPPER_ORE, 18); put(Material.DEEPSLATE_COPPER_ORE, 20);
+        put(Material.GOLD_ORE, 70); put(Material.DEEPSLATE_GOLD_ORE, 78);
+        put(Material.REDSTONE_ORE, 14); put(Material.DEEPSLATE_REDSTONE_ORE, 16);
+        put(Material.LAPIS_ORE, 14); put(Material.DEEPSLATE_LAPIS_ORE, 16);
+        put(Material.DIAMOND_ORE, 400); put(Material.DEEPSLATE_DIAMOND_ORE, 440);
+        put(Material.EMERALD_ORE, 260); put(Material.DEEPSLATE_EMERALD_ORE, 280);
+        put(Material.NETHER_GOLD_ORE, 55); put(Material.NETHER_QUARTZ_ORE, 18);
+
+        // --- Saplings & leaves ---
+        put(Material.OAK_SAPLING, 3); put(Material.SPRUCE_SAPLING, 3); put(Material.BIRCH_SAPLING, 3);
+        put(Material.JUNGLE_SAPLING, 3); put(Material.ACACIA_SAPLING, 3); put(Material.DARK_OAK_SAPLING, 3);
+        put(Material.CHERRY_SAPLING, 4); put(Material.MANGROVE_PROPAGULE, 5);
+        put(Material.OAK_LEAVES, 2); put(Material.SPRUCE_LEAVES, 2); put(Material.BIRCH_LEAVES, 2);
+        put(Material.JUNGLE_LEAVES, 2); put(Material.ACACIA_LEAVES, 2); put(Material.DARK_OAK_LEAVES, 2);
+        put(Material.MANGROVE_LEAVES, 2); put(Material.CHERRY_LEAVES, 3);
+        put(Material.AZALEA_LEAVES, 3); put(Material.FLOWERING_AZALEA_LEAVES, 4);
+
+        // --- Mushrooms ---
+        put(Material.BROWN_MUSHROOM, 5); put(Material.RED_MUSHROOM, 5);
+        put(Material.BROWN_MUSHROOM_BLOCK, 3); put(Material.RED_MUSHROOM_BLOCK, 3); put(Material.MUSHROOM_STEM, 3);
+
+        // --- Ice & snow ---
+        put(Material.ICE, 8); put(Material.BLUE_ICE, 20); put(Material.SNOW_BLOCK, 3); put(Material.SNOW, 1);
+
+        // --- Coral - vanilla-obtainable via silk touch, great reef decoration ---
+        put(Material.TUBE_CORAL_BLOCK, 25); put(Material.BRAIN_CORAL_BLOCK, 25); put(Material.BUBBLE_CORAL_BLOCK, 25);
+        put(Material.FIRE_CORAL_BLOCK, 25); put(Material.HORN_CORAL_BLOCK, 25);
+        put(Material.DEAD_TUBE_CORAL_BLOCK, 15); put(Material.DEAD_BRAIN_CORAL_BLOCK, 15);
+        put(Material.DEAD_BUBBLE_CORAL_BLOCK, 15); put(Material.DEAD_FIRE_CORAL_BLOCK, 15);
+        put(Material.DEAD_HORN_CORAL_BLOCK, 15);
+        put(Material.TUBE_CORAL, 15); put(Material.BRAIN_CORAL, 15); put(Material.BUBBLE_CORAL, 15);
+        put(Material.FIRE_CORAL, 15); put(Material.HORN_CORAL, 15);
+        put(Material.SEAGRASS, 2); put(Material.SEA_PICKLE, 8); put(Material.SEA_LANTERN, 45);
+
+        // --- Light sources & misc decor ---
+        put(Material.TORCH, 1); put(Material.SOUL_TORCH, 6); put(Material.REDSTONE_TORCH, 3);
+        put(Material.LANTERN, 12); put(Material.SOUL_LANTERN, 18); put(Material.END_ROD, 20);
+        put(Material.CHAIN, 10); put(Material.IRON_BARS, 8); put(Material.FLOWER_POT, 4);
+        put(Material.ITEM_FRAME, 10); put(Material.GLOW_ITEM_FRAME, 25); put(Material.PAINTING, 10);
+        put(Material.ARMOR_STAND, 35); put(Material.JUKEBOX, 60); put(Material.BEEHIVE, 25);
+        put(Material.BEE_NEST, 20); put(Material.CAULDRON, 20); put(Material.CHEST, 15);
+        put(Material.TRAPPED_CHEST, 20); put(Material.ENDER_CHEST, 650); put(Material.BOOKSHELF, 20);
+        put(Material.CHISELED_BOOKSHELF, 35); put(Material.ANVIL, 300); put(Material.CHIPPED_ANVIL, 230);
+        put(Material.DAMAGED_ANVIL, 160); put(Material.BELL, 70); put(Material.SCAFFOLDING, 4);
+        put(Material.CONDUIT, 1400); put(Material.TNT, 25);
+
+        // --- Minecarts & rails ---
+        put(Material.MINECART, 30); put(Material.CHEST_MINECART, 45); put(Material.FURNACE_MINECART, 45);
+        put(Material.HOPPER_MINECART, 90); put(Material.TNT_MINECART, 55);
+        put(Material.RAIL, 4); put(Material.POWERED_RAIL, 15); put(Material.DETECTOR_RAIL, 15);
+        put(Material.ACTIVATOR_RAIL, 15);
+
+        // --- Boats, including chest variants ---
+        put(Material.OAK_BOAT, 20); put(Material.OAK_CHEST_BOAT, 35);
+        put(Material.SPRUCE_BOAT, 20); put(Material.SPRUCE_CHEST_BOAT, 35);
+        put(Material.BIRCH_BOAT, 20); put(Material.BIRCH_CHEST_BOAT, 35);
+        put(Material.JUNGLE_BOAT, 20); put(Material.JUNGLE_CHEST_BOAT, 35);
+        put(Material.ACACIA_BOAT, 20); put(Material.ACACIA_CHEST_BOAT, 35);
+        put(Material.DARK_OAK_BOAT, 20); put(Material.DARK_OAK_CHEST_BOAT, 35);
+        put(Material.MANGROVE_BOAT, 20); put(Material.MANGROVE_CHEST_BOAT, 35);
+        put(Material.CHERRY_BOAT, 24); put(Material.CHERRY_CHEST_BOAT, 40);
+        put(Material.BAMBOO_RAFT, 18); put(Material.BAMBOO_CHEST_RAFT, 32);
+
+        // --- Horse armor - gear variety beyond player equipment ---
+        put(Material.LEATHER_HORSE_ARMOR, 60); put(Material.IRON_HORSE_ARMOR, 220);
+        put(Material.GOLDEN_HORSE_ARMOR, 400); put(Material.DIAMOND_HORSE_ARMOR, 1100);
+        put(Material.TURTLE_HELMET, 300);
+
+        // --- Deep dark & nature decor, round two ---
+        put(Material.SCULK_VEIN, 10); put(Material.SCULK_CATALYST, 400); put(Material.SCULK_SHRIEKER, 500);
+        put(Material.ECHO_SHARD, 280); put(Material.SPORE_BLOSSOM, 20); put(Material.HANGING_ROOTS, 8);
+        put(Material.BIG_DRIPLEAF, 8); put(Material.SMALL_DRIPLEAF, 5);
+        put(Material.VINE, 2); put(Material.TWISTING_VINES, 3); put(Material.WEEPING_VINES, 3);
+        put(Material.CAVE_VINES, 4); put(Material.LILY_PAD, 4);
+        put(Material.COARSE_DIRT, 2); put(Material.ROOTED_DIRT, 3); put(Material.DIRT_PATH, 2);
+
+        // --- End dimension decor ---
+        put(Material.END_STONE, 6); put(Material.END_STONE_BRICKS, 7);
+        put(Material.PURPUR_BLOCK, 25); put(Material.PURPUR_PILLAR, 26);
+        put(Material.CHORUS_PLANT, 10); put(Material.CHORUS_FLOWER, 12);
+
+        // --- Loose-end single items ---
+        put(Material.BOOK, 20); put(Material.WRITABLE_BOOK, 10); put(Material.PAPER, 3);
+        put(Material.GLASS_BOTTLE, 2); put(Material.BUNDLE, 100); put(Material.RECOVERY_COMPASS, 650);
+        put(Material.BRUSH, 60);
     }
 
     private static void put(Material material, long price) {

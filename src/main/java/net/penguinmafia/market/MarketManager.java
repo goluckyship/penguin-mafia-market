@@ -25,6 +25,13 @@ public class MarketManager {
     private final Map<Integer, Listing> listings = new LinkedHashMap<>();
     private int nextId = 1;
 
+    /** Optional - set via setLedger() once PenguinMafiaMarket creates one, so every completed buy() gets recorded for /bm history. Left null and skipped if never set. */
+    private TransactionLedger ledger;
+
+    public void setLedger(TransactionLedger ledger) {
+        this.ledger = ledger;
+    }
+
     public MarketManager(PenguinMafiaMarket plugin, Economy economy) {
         this.plugin = plugin;
         this.economy = economy;
@@ -176,6 +183,11 @@ public class MarketManager {
 
         giveOrDrop(buyer, listing.item);
 
+        if (ledger != null) {
+            String itemDescription = listing.item.getAmount() + "x " + listing.item.getType().toString().toLowerCase().replace('_', ' ');
+            ledger.record(listing.seller, listing.sellerName, buyer.getUniqueId(), buyer.getName(), itemDescription, listing.price);
+        }
+
         // The Black Market Dealer isn't a real player - buying from its stock
         // sinks the coins out of the economy instead of crediting anyone,
         // rather than quietly piling up a balance on a fake account that
@@ -190,6 +202,45 @@ public class MarketManager {
                         + listing.item.getType() + " for §b" + listing.price + " Frozen Coins§7.");
             }
         }
+        return true;
+    }
+
+    /**
+     * Op admin tool (/bm admin refund): removes a listing and hands the item
+     * back to its seller, but only if they're online right now to receive it
+     * - returns false and leaves the listing untouched otherwise, so nothing
+     * is lost silently. No coins change hands either way; this is for
+     * returning a stuck item, not reversing a completed sale.
+     */
+    public boolean adminRefund(int id) {
+        Listing listing = listings.get(id);
+        if (listing == null) return false;
+        Player seller = Bukkit.getPlayer(listing.seller);
+        if (seller == null) return false;
+        listings.remove(id);
+        save();
+        giveOrDrop(seller, listing.item);
+        return true;
+    }
+
+    /**
+     * Op admin tool (/bm admin wipe): deletes a listing outright with no
+     * refund to anyone - for a bugged/stuck listing an admin has decided
+     * isn't worth (or isn't possible to) hand back.
+     */
+    public boolean adminWipe(int id) {
+        if (!listings.containsKey(id)) return false;
+        listings.remove(id);
+        save();
+        return true;
+    }
+
+    /** Op admin tool (/bm admin setprice): corrects a mispriced listing without touching the item or seller. */
+    public boolean adminSetPrice(int id, long price) {
+        Listing listing = listings.get(id);
+        if (listing == null || price <= 0) return false;
+        listing.price = price;
+        save();
         return true;
     }
 

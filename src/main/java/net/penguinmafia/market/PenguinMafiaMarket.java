@@ -10,18 +10,27 @@ public final class PenguinMafiaMarket extends JavaPlugin {
     private MarketManager marketManager;
     private AnnouncementManager announcementManager;
     private PlaytimeRewardManager playtimeRewardManager;
+    private JobsManager jobsManager;
+    private AuctionManager auctionManager;
+    private ModerationManager moderationManager;
+    private BountyManager bountyManager;
+    private TransactionLedger transactionLedger;
+    private WarehouseManager warehouseManager;
+    private DailyRewardManager dailyRewardManager;
 
     @Override
     public void onEnable() {
         getDataFolder().mkdirs();
         this.economy = new Economy(this);
         this.marketManager = new MarketManager(this, economy);
+        this.transactionLedger = new TransactionLedger(this);
+        this.marketManager.setLedger(transactionLedger);
         MarketBotManager marketBotManager = MarketBotManager.start(this, marketManager);
 
         MarketPreferencesManager marketPreferencesManager = new MarketPreferencesManager(this);
         MarketGUI marketGUI = new MarketGUI(marketManager, marketPreferencesManager);
 
-        MarketCommand command = new MarketCommand(this, economy, marketManager, marketGUI, marketBotManager);
+        MarketCommand command = new MarketCommand(this, economy, marketManager, marketGUI, marketBotManager, transactionLedger);
         getCommand("bm").setExecutor(command);
         getCommand("bm").setTabCompleter(command);
 
@@ -82,6 +91,42 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getServer().getPluginManager().registerEvents(infoGUI, this);
         getCommand("info").setExecutor(new InfoCommand(infoGUI));
 
+        this.jobsManager = new JobsManager(this);
+        getServer().getPluginManager().registerEvents(new JobsListener(jobsManager, economy), this);
+        JobsCommand jobsCommand = new JobsCommand(jobsManager);
+        getCommand("job").setExecutor(jobsCommand);
+        getCommand("job").setTabCompleter(jobsCommand);
+
+        this.auctionManager = AuctionManager.start(this, economy);
+        getServer().getPluginManager().registerEvents(auctionManager, this);
+        AuctionCommand auctionCommand = new AuctionCommand(auctionManager);
+        getCommand("auction").setExecutor(auctionCommand);
+        getCommand("auction").setTabCompleter(auctionCommand);
+
+        this.moderationManager = new ModerationManager(this);
+        getServer().getPluginManager().registerEvents(new ModerationListener(moderationManager), this);
+        ModerationCommand moderationCommand = new ModerationCommand(moderationManager);
+        getCommand("mod").setExecutor(moderationCommand);
+        getCommand("mod").setTabCompleter(moderationCommand);
+
+        this.bountyManager = new BountyManager(this, economy);
+        getServer().getPluginManager().registerEvents(bountyManager, this);
+        BountyCommand bountyCommand = new BountyCommand(bountyManager);
+        getCommand("bounty").setExecutor(bountyCommand);
+        getCommand("bounty").setTabCompleter(bountyCommand);
+
+        this.warehouseManager = new WarehouseManager(this, economy);
+        WarehouseGUIListener warehouseGUIListener = new WarehouseGUIListener(warehouseManager);
+        getServer().getPluginManager().registerEvents(warehouseGUIListener, this);
+        WarehouseCommand warehouseCommand = new WarehouseCommand(warehouseManager, warehouseGUIListener);
+        getCommand("warehouse").setExecutor(warehouseCommand);
+        getCommand("warehouse").setTabCompleter(warehouseCommand);
+
+        this.dailyRewardManager = new DailyRewardManager(this, economy);
+        DailyRewardCommand dailyRewardCommand = new DailyRewardCommand(dailyRewardManager);
+        getCommand("daily").setExecutor(dailyRewardCommand);
+        getCommand("daily").setTabCompleter(dailyRewardCommand);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 
@@ -91,6 +136,12 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         if (marketManager != null) marketManager.save();
         if (announcementManager != null) announcementManager.shutdown();
         if (playtimeRewardManager != null) playtimeRewardManager.shutdown();
+        if (jobsManager != null) jobsManager.save();
+        if (auctionManager != null) auctionManager.save();
+        if (moderationManager != null) moderationManager.save();
+        if (bountyManager != null) bountyManager.save();
+        if (warehouseManager != null) warehouseManager.save();
+        if (dailyRewardManager != null) dailyRewardManager.save();
     }
 
     public Economy getEconomy() {

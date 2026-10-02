@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.25.0
+version: 1.26.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -16,6 +16,9 @@ commands:
       /bm balance - check your Frozen Coin balance
       /bm deposit - deposit held Frozen Coin items into your balance
       /bm withdraw <amount> - withdraw balance as physical Frozen Coin items
+      /bm history [player] - recent completed sales (another player's requires op)
+      /bm admin <wipe|refund|setprice> <id> [price] - op-only listing fixes
+      /bm top - the top 10 highest-earning sellers
     aliases: [blackmarket, market]
   coins:
     description: Op-only - directly add or remove a player's Frozen Coin balance, no item or renaming needed.
@@ -107,3 +110,58 @@ commands:
   info:
     description: Reopen the how-to-play menu that's shown automatically when you join.
     usage: /info - opens the command guide menu
+  job:
+    description: Join a job (Miner, Farmer, Lumberjack, Hunter, Fisherman) to earn Frozen Coins for normal survival actions.
+    usage: |
+      /job - see your own job levels and progress
+      /job list - see every job and what it pays for
+      /job join <job> - join a job (up to 2 at once)
+      /job leave <job> - leave a job (resets its progress)
+      /job stats [player] - check your or someone else's job levels
+      /job top <job> - the top 10 players in a job
+  auction:
+    description: The Auction House - list an item for timed bidding instead of a fixed Black Market price.
+    usage: |
+      /auction - see your own running auctions
+      /auction sell <price> <minutes> - auction the item in your hand (5-4320 minutes)
+      /auction list - see every active auction
+      /auction info <id> - details on one auction
+      /auction bid <id> <amount> - place a bid (each bid must beat the last by 5%)
+      /auction cancel <id> - cancel your own auction before it has any bids (ops can force-cancel one with a bid)
+      /auction history [player] - past completed auctions
+    aliases: [ah]
+  mod:
+    description: Op-only moderation toolbox - freeze, mute, warn, and warning history.
+    usage: |
+      /mod freeze <player> - lock a player in place (lifts automatically on disconnect)
+      /mod unfreeze <player> - let them move again
+      /mod mute <player> <minutes> [reason] - block their chat for a while
+      /mod unmute <player> - lift a mute early
+      /mod warn <player> <reason> - add a permanent warning to their record
+      /mod tempban <player> <minutes> [reason] - ban them, auto-lifted after the time's up
+      /mod unban <player> - lift a tempban early
+      /mod history <player> - see everyone's warnings for a player (numbered)
+      /mod unwarn <player> <#> - remove a specific warning by its number
+      /mod list - see who's currently frozen, muted, or tempbanned
+    permission: penguinmafia.mod
+    permission-message: Only ops can use /mod.
+    aliases: [staff]
+  bounty:
+    description: Put Frozen Coins on another player's head, collected automatically by whoever kills them in PvP.
+    usage: |
+      /bounty - see the current top bounties
+      /bounty place <player> <amount> - put coins on someone's head (stacks with existing bounties)
+      /bounty check <player> - see a player's bounty and who contributed
+      /bounty list - same as no args, the top 10 bounties
+  warehouse:
+    description: Paid personal storage - start with one free row, spend Frozen Coins to add more (up to 6 rows).
+    usage: |
+      /warehouse - open your personal storage
+      /warehouse info - see your current size and next upgrade cost
+      /warehouse upgrade - spend coins to add another row
+    aliases: [wh]
+  daily:
+    description: Claim a once-per-day Frozen Coin login bonus that grows with a consecutive-day streak.
+    usage: |
+      /daily - claim today's reward (streak resets if you miss a day)
+      /daily top - see the longest active daily streaks

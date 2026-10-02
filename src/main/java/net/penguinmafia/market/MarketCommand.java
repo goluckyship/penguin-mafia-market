@@ -19,14 +19,16 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     private final MarketManager market;
     private final MarketGUI gui;
     private final MarketBotManager marketBotManager;
+    private final TransactionLedger ledger;
 
     public MarketCommand(PenguinMafiaMarket plugin, Economy economy, MarketManager market, MarketGUI gui,
-                          MarketBotManager marketBotManager) {
+                          MarketBotManager marketBotManager, TransactionLedger ledger) {
         this.plugin = plugin;
         this.economy = economy;
         this.market = market;
         this.gui = gui;
         this.marketBotManager = marketBotManager;
+        this.ledger = ledger;
     }
 
     @Override
@@ -53,6 +55,12 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
                 return handleSearch(player, args);
             case "restock":
                 return handleRestock(player);
+            case "admin":
+                return handleAdmin(player, args);
+            case "history":
+                return handleHistory(player, args);
+            case "top":
+                return handleTop(player);
             case "cancel":
                 return handleCancel(player, args);
             case "balance":
@@ -146,6 +154,145 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
                 + "Restocked the dealer - added stock to " + ChatColor.AQUA + restocked + ChatColor.GRAY
                 + " item type(s).");
+        return true;
+    }
+
+    /**
+     * Op-only admin tools for the gap the README used to call out explicitly:
+     * no way to wipe a stuck listing or refund someone without going through
+     * the database by hand. All three act on a listing id, same as /bm cancel.
+     */
+    private boolean handleAdmin(Player player, String[] args) {
+        if (!player.isOp()) {
+            player.sendMessage(ChatColor.RED + "Only ops can use /bm admin.");
+            return true;
+        }
+        if (args.length < 3) {
+            player.sendMessage(ChatColor.RED + "Usage: /bm admin <wipe|refund|setprice> <id> [price]");
+            return true;
+        }
+
+        String action = args[1].toLowerCase();
+        int id;
+        try {
+            id = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            player.sendMessage(ChatColor.RED + "Listing id must be a number.");
+            return true;
+        }
+
+        switch (action) {
+            case "wipe": {
+                boolean ok = market.adminWipe(id);
+                player.sendMessage(ok
+                        ? ChatColor.GRAY + "Listing #" + id + " wiped - the item is gone, nobody was refunded."
+                        : ChatColor.RED + "No listing #" + id + " found.");
+                return true;
+            }
+            case "refund": {
+                boolean ok = market.adminRefund(id);
+                if (ok) {
+                    player.sendMessage(ChatColor.GRAY + "Listing #" + id + " refunded - the seller (must have been online) got the item back.");
+                } else {
+                    Listing listing = market.getListing(id);
+                    player.sendMessage(listing == null
+                            ? ChatColor.RED + "No listing #" + id + " found."
+                            : ChatColor.RED + "Seller " + listing.sellerName + " needs to be online to receive the item - try again once they're on.");
+                }
+                return true;
+            }
+            case "setprice": {
+                if (args.length < 4) {
+                    player.sendMessage(ChatColor.RED + "Usage: /bm admin setprice <id> <price>");
+                    return true;
+                }
+                long price;
+                try {
+                    price = Long.parseLong(args[3]);
+                } catch (NumberFormatException e) {
+                    player.sendMessage(ChatColor.RED + "Price must be a whole number.");
+                    return true;
+                }
+                boolean ok = market.adminSetPrice(id, price);
+                player.sendMessage(ok
+                        ? ChatColor.GRAY + "Listing #" + id + " price updated to " + ChatColor.AQUA + price + ChatColor.GRAY + " coins."
+                        : ChatColor.RED + "No listing #" + id + " found, or price wasn't greater than 0.");
+                return true;
+            }
+            default:
+                player.sendMessage(ChatColor.RED + "Usage: /bm admin <wipe|refund|setprice> <id> [price]");
+                return true;
+        }
+    }
+
+    /**
+     * /bm history [player] - recent completed sales involving a player
+     * (buyer or seller side), for settling the "I never got paid" kind of
+     * dispute with an actual record instead of memory. Anyone can check
+     * their own history; checking someone else's requires op, same spirit
+     * as /bm admin.
+     */
+    private boolean handleHistory(Player player, String[] args) {
+        if (ledger == null) {
+            player.sendMessage(ChatColor.RED + "Transaction history isn't available right now.");
+            return true;
+        }
+
+        java.util.UUID targetId;
+        String targetName;
+        if (args.length >= 2) {
+            if (!player.isOp()) {
+                player.sendMessage(ChatColor.RED + "Only ops can check another player's history.");
+                return true;
+            }
+            org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[1]);
+            targetId = target.getUniqueId();
+            targetName = target.getName() != null ? target.getName() : args[1];
+        } else {
+            targetId = player.getUniqueId();
+            targetName = player.getName();
+        }
+
+        List<TransactionLedger.Sale> history = ledger.getHistoryFor(targetId, 10);
+        if (history.isEmpty()) {
+            player.sendMessage(ChatColor.GRAY + targetName + " has no recorded Black Market sales yet.");
+            return true;
+        }
+
+        player.sendMessage(ChatColor.LIGHT_PURPLE + "--- " + targetName + "'s last " + history.size() + " sale(s) ---");
+        for (TransactionLedger.Sale sale : history) {
+            boolean wasSeller = sale.sellerId.equals(targetId);
+            String role = wasSeller ? ChatColor.GREEN + "SOLD" : ChatColor.RED + "BOUGHT";
+            String counterparty = wasSeller ? sale.buyerName : sale.sellerName;
+            player.sendMessage(ChatColor.GRAY + "[" + TransactionLedger.formatTimestamp(sale.timestampMillis) + " UTC] "
+                    + role + ChatColor.GRAY + " " + sale.itemDescription + " for " + ChatColor.AQUA
+                    + sale.price + ChatColor.GRAY + " coins " + (wasSeller ? "to " : "from ") + counterparty);
+        }
+        return true;
+    }
+
+    /** /bm top - the 10 highest-earning sellers on the Black Market, by total coin revenue across every recorded sale. */
+    private boolean handleTop(Player player) {
+        if (ledger == null) {
+            player.sendMessage(ChatColor.RED + "Seller rankings aren't available right now.");
+            return true;
+        }
+
+        List<java.util.Map.Entry<java.util.UUID, Long>> top = ledger.getTopSellers(10);
+        if (top.isEmpty()) {
+            player.sendMessage(ChatColor.GRAY + "Nobody's sold anything on the Black Market yet.");
+            return true;
+        }
+
+        player.sendMessage(ChatColor.LIGHT_PURPLE + "--- Top Black Market Sellers ---");
+        int rank = 1;
+        for (java.util.Map.Entry<java.util.UUID, Long> entry : top) {
+            org.bukkit.OfflinePlayer seller = org.bukkit.Bukkit.getOfflinePlayer(entry.getKey());
+            String name = seller.getName() != null ? seller.getName() : entry.getKey().toString();
+            player.sendMessage(ChatColor.YELLOW + "" + rank + ". " + ChatColor.WHITE + name
+                    + ChatColor.GRAY + " - " + ChatColor.AQUA + entry.getValue() + ChatColor.GRAY + " coins earned");
+            rank++;
+        }
         return true;
     }
 
@@ -277,6 +424,9 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- manage your listings (cancel with a click)");
         player.sendMessage(ChatColor.GRAY + "/bm search <item> " + ChatColor.WHITE + "- jump straight to a search (same as the GUI's Search button)");
         player.sendMessage(ChatColor.GRAY + "/bm restock " + ChatColor.WHITE + "- (op only) force the Black Market Dealer to add another round of stock now");
+        player.sendMessage(ChatColor.GRAY + "/bm admin <wipe|refund|setprice> <id> [price] " + ChatColor.WHITE + "- (op only) fix a stuck or mispriced listing");
+        player.sendMessage(ChatColor.GRAY + "/bm history [player] " + ChatColor.WHITE + "- recent completed sales (another player's requires op)");
+        player.sendMessage(ChatColor.GRAY + "/bm top " + ChatColor.WHITE + "- the top 10 highest-earning sellers");
         player.sendMessage(ChatColor.GRAY + "/bm cancel <id> " + ChatColor.WHITE + "- cancel a listing");
         player.sendMessage(ChatColor.GRAY + "/bm balance " + ChatColor.WHITE + "- check your coin balance");
         player.sendMessage(ChatColor.GRAY + "/bm deposit " + ChatColor.WHITE + "- turn held coins into balance");
@@ -294,7 +444,10 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(Arrays.asList("sell", "list", "search", "restock", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
+            return filter(Arrays.asList("sell", "list", "search", "restock", "admin", "history", "top", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
+            return filter(Arrays.asList("wipe", "refund", "setprice"), args[1]);
         }
         return new ArrayList<>();
     }
