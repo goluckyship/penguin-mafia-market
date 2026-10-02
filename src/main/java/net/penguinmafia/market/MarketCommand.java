@@ -46,6 +46,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             case "list":
                 gui.openMyListings(player, 0);
                 return true;
+            case "search":
+                return handleSearch(player, args);
             case "cancel":
                 return handleCancel(player, args);
             case "balance":
@@ -103,6 +105,24 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
                 + "Listed " + describeItem(toSell) + ChatColor.GRAY + " for " + ChatColor.AQUA
                 + price + " Frozen Coins" + ChatColor.GRAY + " (listing #" + listing.id + ").");
+        return true;
+    }
+
+    /**
+     * Command-line shortcut for the GUI's Compass search - jumps straight to
+     * results instead of clicking Search and typing in chat. The in-GUI search
+     * stays exactly as it was (compass click -> type in chat -> "cancel" to
+     * back out), this is just a faster path to the same place for anyone who
+     * prefers typing the whole thing on one line.
+     */
+    private boolean handleSearch(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.RED + "Usage: /bm search <item or seller name>");
+            return true;
+        }
+        String query = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        gui.openWithSearch(player, query);
+        player.sendMessage(ChatColor.GRAY + "Searching the Black Market for: " + ChatColor.WHITE + query);
         return true;
     }
 
@@ -232,6 +252,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GRAY + "/bm " + ChatColor.WHITE + "- open the market GUI (search, sort by price, and category filters, all remembered for you)");
         player.sendMessage(ChatColor.GRAY + "/bm sell <price> " + ChatColor.WHITE + "- list the item in your hand");
         player.sendMessage(ChatColor.GRAY + "/bm list " + ChatColor.WHITE + "- manage your listings (cancel with a click)");
+        player.sendMessage(ChatColor.GRAY + "/bm search <item> " + ChatColor.WHITE + "- jump straight to a search (same as the GUI's Search button)");
         player.sendMessage(ChatColor.GRAY + "/bm cancel <id> " + ChatColor.WHITE + "- cancel a listing");
         player.sendMessage(ChatColor.GRAY + "/bm balance " + ChatColor.WHITE + "- check your coin balance");
         player.sendMessage(ChatColor.GRAY + "/bm deposit " + ChatColor.WHITE + "- turn held coins into balance");
@@ -249,7 +270,7 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(Arrays.asList("sell", "list", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
+            return filter(Arrays.asList("sell", "list", "search", "cancel", "balance", "deposit", "withdraw", "help"), args[0]);
         }
         return new ArrayList<>();
     }

@@ -26,6 +26,12 @@ import java.util.UUID;
  * the curated pool as a belt-and-suspenders check). Rare/end-game items
  * that genuinely are vanilla-obtainable (netherite, elytra, totems...) are
  * allowed, just priced steeply so they aren't a cheap shortcut.
+ *
+ * Pool and stack sizes are tuned generous on purpose: a wide variety of
+ * blocks/food/tools/decor beyond just raw resources, firework rockets
+ * stocked extra heavily as a specialty, and per-listing quantities rolled
+ * roughly tenfold over a bare-bones shop (still capped at each material's
+ * real stack limit, so tools/armor stay realistic at 1).
  */
 public class MarketBotManager {
 
@@ -107,6 +113,81 @@ public class MarketBotManager {
         put(Material.NETHERITE_HELMET, 5500); put(Material.NETHERITE_CHESTPLATE, 8500);
         put(Material.NETHERITE_LEGGINGS, 7500); put(Material.NETHERITE_BOOTS, 5000);
         put(Material.BOW, 150); put(Material.CROSSBOW, 200); put(Material.SHIELD, 120);
+
+        // --- Rockets - the requested specialty item; weighted extra-heavy in the pool below ---
+        put(Material.FIREWORK_ROCKET, 20);
+
+        // --- More wood/wool/decor variety ---
+        put(Material.SPRUCE_PLANKS, 3); put(Material.BIRCH_PLANKS, 3); put(Material.JUNGLE_PLANKS, 3);
+        put(Material.ACACIA_PLANKS, 3); put(Material.DARK_OAK_PLANKS, 3); put(Material.MANGROVE_PLANKS, 3);
+        put(Material.CHERRY_PLANKS, 4); put(Material.BAMBOO_PLANKS, 3);
+        put(Material.ORANGE_WOOL, 6); put(Material.MAGENTA_WOOL, 6); put(Material.LIGHT_BLUE_WOOL, 6);
+        put(Material.YELLOW_WOOL, 6); put(Material.LIME_WOOL, 6); put(Material.PINK_WOOL, 6);
+        put(Material.GRAY_WOOL, 6); put(Material.LIGHT_GRAY_WOOL, 6); put(Material.CYAN_WOOL, 6);
+        put(Material.PURPLE_WOOL, 6); put(Material.BLUE_WOOL, 6); put(Material.BROWN_WOOL, 6);
+        put(Material.GREEN_WOOL, 6); put(Material.RED_WOOL, 6); put(Material.BLACK_WOOL, 6);
+        put(Material.BLACK_CONCRETE, 8); put(Material.RED_CONCRETE, 8); put(Material.BLUE_CONCRETE, 8);
+        put(Material.WHITE_GLAZED_TERRACOTTA, 20); put(Material.BLUE_GLAZED_TERRACOTTA, 20);
+        put(Material.POPPY, 4); put(Material.DANDELION, 4); put(Material.BLUE_ORCHID, 6);
+        put(Material.ALLIUM, 6); put(Material.AZURE_BLUET, 6); put(Material.ORANGE_TULIP, 5);
+        put(Material.PINK_TULIP, 5); put(Material.RED_TULIP, 5); put(Material.WHITE_TULIP, 5);
+        put(Material.OXEYE_DAISY, 4); put(Material.CORNFLOWER, 5); put(Material.LILY_OF_THE_VALLEY, 8);
+        put(Material.SUNFLOWER, 8); put(Material.LILAC, 8); put(Material.ROSE_BUSH, 8); put(Material.PEONY, 8);
+
+        // --- Food variety ---
+        put(Material.BEEF, 6); put(Material.COOKED_BEEF, 12); put(Material.PORKCHOP, 6);
+        put(Material.COOKED_PORKCHOP, 12); put(Material.CHICKEN, 4); put(Material.COOKED_CHICKEN, 8);
+        put(Material.MUTTON, 5); put(Material.COOKED_MUTTON, 10); put(Material.RABBIT, 5);
+        put(Material.COOKED_RABBIT, 10); put(Material.BAKED_POTATO, 6); put(Material.PUMPKIN_PIE, 16);
+        put(Material.COOKIE, 3); put(Material.CAKE, 40); put(Material.GOLDEN_CARROT, 40);
+        put(Material.GOLDEN_APPLE, 300); put(Material.MUSHROOM_STEW, 10); put(Material.RABBIT_STEW, 14);
+        put(Material.SUSPICIOUS_STEW, 10); put(Material.DRIED_KELP, 2); put(Material.SWEET_BERRIES, 4);
+        put(Material.GLOW_BERRIES, 6); put(Material.TROPICAL_FISH, 10); put(Material.PUFFERFISH, 8);
+        put(Material.FERMENTED_SPIDER_EYE, 18); put(Material.GLISTERING_MELON_SLICE, 30);
+
+        // --- Redstone & utility blocks ---
+        put(Material.REPEATER, 20); put(Material.COMPARATOR, 30); put(Material.PISTON, 25);
+        put(Material.STICKY_PISTON, 35); put(Material.OBSERVER, 40); put(Material.HOPPER, 60);
+        put(Material.DROPPER, 15); put(Material.DISPENSER, 20); put(Material.NOTE_BLOCK, 10);
+        put(Material.TARGET, 25); put(Material.TRIPWIRE_HOOK, 8); put(Material.DAYLIGHT_DETECTOR, 50);
+        put(Material.LECTERN, 20); put(Material.COMPOSTER, 15); put(Material.BARREL, 15);
+        put(Material.SMOKER, 25); put(Material.BLAST_FURNACE, 35); put(Material.CARTOGRAPHY_TABLE, 20);
+        put(Material.FLETCHING_TABLE, 20); put(Material.SMITHING_TABLE, 20); put(Material.GRINDSTONE, 25);
+        put(Material.STONECUTTER, 25); put(Material.LOOM, 15); put(Material.LODESTONE, 80);
+        put(Material.RESPAWN_ANCHOR, 400); put(Material.CRYING_OBSIDIAN, 60);
+
+        // --- Nether, deep dark & nature decoration ---
+        put(Material.WARPED_STEM, 8); put(Material.CRIMSON_STEM, 8); put(Material.WARPED_NYLIUM, 6);
+        put(Material.CRIMSON_NYLIUM, 6); put(Material.WARPED_FUNGUS, 5); put(Material.CRIMSON_FUNGUS, 5);
+        put(Material.SHROOMLIGHT, 15); put(Material.NETHER_WART_BLOCK, 10); put(Material.SOUL_SAND, 5);
+        put(Material.SOUL_SOIL, 5); put(Material.MAGMA_BLOCK, 10); put(Material.BLACKSTONE, 4);
+        put(Material.GILDED_BLACKSTONE, 60); put(Material.SCULK, 20); put(Material.GLOW_LICHEN, 8);
+        put(Material.MOSS_CARPET, 6); put(Material.AZALEA, 10); put(Material.FLOWERING_AZALEA, 15);
+        put(Material.MANGROVE_ROOTS, 8); put(Material.MUD_BRICKS, 5); put(Material.PACKED_MUD, 4);
+        put(Material.CALCITE, 4); put(Material.DRIPSTONE_BLOCK, 6); put(Material.POINTED_DRIPSTONE, 10);
+        put(Material.AMETHYST_BLOCK, 50);
+
+        // --- Other tool/armor tiers and handy gear ---
+        put(Material.WOODEN_SWORD, 15); put(Material.WOODEN_PICKAXE, 15); put(Material.WOODEN_AXE, 15);
+        put(Material.STONE_SWORD, 30); put(Material.STONE_PICKAXE, 35); put(Material.STONE_AXE, 35);
+        put(Material.GOLDEN_SWORD, 80); put(Material.GOLDEN_PICKAXE, 90); put(Material.GOLDEN_AXE, 90);
+        put(Material.GOLDEN_HELMET, 70); put(Material.GOLDEN_CHESTPLATE, 110); put(Material.GOLDEN_LEGGINGS, 100);
+        put(Material.GOLDEN_BOOTS, 65); put(Material.LEATHER_HELMET, 40); put(Material.LEATHER_CHESTPLATE, 60);
+        put(Material.LEATHER_LEGGINGS, 55); put(Material.LEATHER_BOOTS, 35); put(Material.CHAINMAIL_HELMET, 120);
+        put(Material.CHAINMAIL_CHESTPLATE, 180); put(Material.CHAINMAIL_LEGGINGS, 160); put(Material.CHAINMAIL_BOOTS, 110);
+        put(Material.IRON_HELMET, 150); put(Material.IRON_CHESTPLATE, 240); put(Material.IRON_LEGGINGS, 220);
+        put(Material.IRON_BOOTS, 130); put(Material.FISHING_ROD, 90); put(Material.SHEARS, 60);
+        put(Material.FLINT_AND_STEEL, 70); put(Material.COMPASS, 50); put(Material.CLOCK, 50);
+        put(Material.SPYGLASS, 300); put(Material.LEAD, 20); put(Material.SADDLE, 150);
+        put(Material.CARROT_ON_A_STICK, 60);
+
+        // --- Music discs - rare creeper-blast-drop collectibles, fun chase items ---
+        put(Material.MUSIC_DISC_13, 500); put(Material.MUSIC_DISC_CAT, 500); put(Material.MUSIC_DISC_BLOCKS, 500);
+        put(Material.MUSIC_DISC_CHIRP, 500); put(Material.MUSIC_DISC_FAR, 500); put(Material.MUSIC_DISC_MALL, 500);
+        put(Material.MUSIC_DISC_MELLOHI, 500); put(Material.MUSIC_DISC_STAL, 500); put(Material.MUSIC_DISC_STRAD, 500);
+        put(Material.MUSIC_DISC_WARD, 500); put(Material.MUSIC_DISC_11, 500); put(Material.MUSIC_DISC_WAIT, 500);
+        put(Material.MUSIC_DISC_PIGSTEP, 800); put(Material.MUSIC_DISC_OTHERSIDE, 800);
+        put(Material.MUSIC_DISC_5, 800); put(Material.MUSIC_DISC_RELIC, 800);
     }
 
     private static void put(Material material, long price) {
@@ -123,6 +204,12 @@ public class MarketBotManager {
         this.plugin = plugin;
         this.market = market;
         this.pool = new ArrayList<>(BASE_PRICES.keySet());
+        // Rockets are the requested specialty item - stock the pool with nine extra
+        // entries (ten total, counting the one in BASE_PRICES) so they're drawn roughly
+        // ten times as often as an ordinary single-weighted item below.
+        for (int i = 0; i < 9; i++) {
+            pool.add(Material.FIREWORK_ROCKET);
+        }
     }
 
     /** Starts the restock timer - an immediate first stock, then every REFRESH_INTERVAL after that. */
@@ -146,7 +233,7 @@ public class MarketBotManager {
             if (BLOCKED.contains(material)) continue; // safety net, should never actually trigger
 
             long unitPrice = BASE_PRICES.get(material);
-            int amount = rollAmount(unitPrice);
+            int amount = rollAmount(unitPrice, material);
             // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
             double variance = 0.85 + random.nextDouble() * 0.30;
             long price = Math.max(1, Math.round(unitPrice * amount * variance));
@@ -159,11 +246,19 @@ public class MarketBotManager {
         plugin.getLogger().info("Black Market Dealer restocked " + listed + " listings.");
     }
 
-    /** Cheap/common items list in bigger stacks; expensive/rare items list in small quantities. */
-    private int rollAmount(long unitPrice) {
-        if (unitPrice >= 1000) return 1 + random.nextInt(2);  // 1-2
-        if (unitPrice >= 100) return 1 + random.nextInt(5);   // 1-5
-        if (unitPrice >= 20) return 1 + random.nextInt(16);   // 1-16
-        return 1 + random.nextInt(64);                        // 1-64
+    /**
+     * Cheap/common items list in bigger stacks; expensive/rare items list in small
+     * quantities. Ranges are rolled roughly tenfold over the original bare-bones shop,
+     * then capped at the material's real max stack size - so a stack of dirt can
+     * genuinely jump from "1-64" to "10-640 capped at 64", while a sword or piece of
+     * armor (max stack 1) always lands on exactly 1 no matter how high the roll goes.
+     */
+    private int rollAmount(long unitPrice, Material material) {
+        int amount;
+        if (unitPrice >= 1000) amount = 10 * (1 + random.nextInt(2));   // was 1-2, now 10-20
+        else if (unitPrice >= 100) amount = 10 * (1 + random.nextInt(5));  // was 1-5, now 10-50
+        else if (unitPrice >= 20) amount = 10 * (1 + random.nextInt(16));  // was 1-16, now 10-160
+        else amount = 10 * (1 + random.nextInt(64));                       // was 1-64, now 10-640
+        return Math.min(amount, material.getMaxStackSize());
     }
 }

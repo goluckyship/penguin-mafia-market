@@ -51,6 +51,18 @@ public class MarketGUI {
         open(player, page, prefs.filter, prefs.sortDescending, prefs.category);
     }
 
+    /**
+     * Opens the browse view straight to a given search term - the command-line
+     * shortcut (/bm search &lt;item&gt;) for players who don't want to click the
+     * Compass and type in chat. Saves the term the same way the in-GUI search
+     * does, so it's remembered and shows the same "Clear Search" button.
+     */
+    public void openWithSearch(Player player, String filter) {
+        prefsManager.setFilter(player, filter);
+        MarketPreferences prefs = prefsManager.get(player);
+        open(player, 0, prefs.filter, prefs.sortDescending, prefs.category);
+    }
+
     public void open(Player player, int page, String filter, boolean sortDescending, MarketCategory category) {
         List<Listing> matches = MarketManager.filter(market.getAllListings(), filter);
         if (category != null && category != MarketCategory.ALL) {
@@ -122,7 +134,8 @@ public class MarketGUI {
         if (mode == MarketHolder.Mode.BROWSE) {
             inv.setItem(46, toggleItem(Material.NAME_TAG, "My Listings", "View and cancel your own listings."));
             inv.setItem(47, toggleItem(Material.COMPASS, "Search", "Click, then type an item or seller name in chat.",
-                    "Type \"cancel\" to back out.", "Remembered until you search again."));
+                    "Type \"cancel\" to back out.", "Remembered until you search again.",
+                    "Tip: /bm search <item> does this in one line."));
             inv.setItem(48, sortItem(sortDescending));
             inv.setItem(51, categoryItem(category));
             if (filter != null && !filter.isBlank()) {
