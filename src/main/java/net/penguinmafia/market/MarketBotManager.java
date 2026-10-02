@@ -82,7 +82,7 @@ public class MarketBotManager {
         put(Material.GLOWSTONE_DUST, 14); put(Material.BLAZE_POWDER, 40); put(Material.BLAZE_ROD, 70);
         put(Material.MAGMA_CREAM, 30); put(Material.ENDER_PEARL, 90); put(Material.EXPERIENCE_BOTTLE, 60);
         put(Material.RABBIT_FOOT, 50); put(Material.RABBIT_HIDE, 10); put(Material.PHANTOM_MEMBRANE, 60);
-        put(Material.GHAST_TEAR, 150); put(Material.TURTLE_SCUTE, 80); put(Material.SCUTE, 80);
+        put(Material.GHAST_TEAR, 150); put(Material.TURTLE_SCUTE, 80);
         put(Material.AMETHYST_SHARD, 35); put(Material.PRISMARINE_SHARD, 12); put(Material.PRISMARINE_CRYSTALS, 20);
         put(Material.NAUTILUS_SHELL, 220); put(Material.DRAGON_BREATH, 300);
 
