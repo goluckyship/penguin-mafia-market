@@ -461,13 +461,16 @@ public class MarketBotManager {
         put(Material.ECHO_SHARD, 280); put(Material.SPORE_BLOSSOM, 20); put(Material.HANGING_ROOTS, 8);
         put(Material.BIG_DRIPLEAF, 8); put(Material.SMALL_DRIPLEAF, 5);
         put(Material.VINE, 2); put(Material.TWISTING_VINES, 3); put(Material.WEEPING_VINES, 3);
-        put(Material.CAVE_VINES, 4); put(Material.LILY_PAD, 4);
+        put(Material.LILY_PAD, 4);
         put(Material.COARSE_DIRT, 2); put(Material.ROOTED_DIRT, 3); put(Material.DIRT_PATH, 2);
 
         // --- End dimension decor ---
         put(Material.END_STONE, 6); put(Material.END_STONE_BRICKS, 7);
         put(Material.PURPUR_BLOCK, 25); put(Material.PURPUR_PILLAR, 26);
-        put(Material.CHORUS_PLANT, 10); put(Material.CHORUS_FLOWER, 12);
+        // CHORUS_PLANT and CHORUS_FLOWER deliberately excluded - like CAVE_VINES,
+        // they're structural/connector blocks with no corresponding item, so
+        // `new ItemStack(material, amount)` throws for them at runtime even
+        // though the Material constant itself compiles fine.
 
         // --- Loose-end single items ---
         put(Material.BOOK, 20); put(Material.WRITABLE_BOOK, 10); put(Material.PAPER, 3);
@@ -533,31 +536,43 @@ public class MarketBotManager {
             Material material = pool.get(random.nextInt(pool.size()));
             if (BLOCKED.contains(material)) continue; // safety net, should never actually trigger
 
-            long unitPrice = BASE_PRICES.get(material);
-            int rolled = rollAmount(unitPrice, material);
-            // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
-            double variance = 0.85 + random.nextDouble() * 0.30;
-            int maxStack = material.getMaxStackSize();
+            try {
+                long unitPrice = BASE_PRICES.get(material);
+                int rolled = rollAmount(unitPrice, material);
+                // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
+                double variance = 0.85 + random.nextDouble() * 0.30;
+                int maxStack = material.getMaxStackSize();
 
-            Listing existing = existingByMaterial.get(material);
-            if (existing != null) {
-                int currentAmount = existing.item.getAmount();
-                if (currentAmount >= maxStack) continue; // already a full stack, skip this roll
+                Listing existing = existingByMaterial.get(material);
+                if (existing != null) {
+                    int currentAmount = existing.item.getAmount();
+                    if (currentAmount >= maxStack) continue; // already a full stack, skip this roll
 
-                int added = Math.min(rolled, maxStack - currentAmount);
-                long addedPrice = Math.max(1, Math.round(unitPrice * added * variance));
+                    int added = Math.min(rolled, maxStack - currentAmount);
+                    long addedPrice = Math.max(1, Math.round(unitPrice * added * variance));
 
-                existing.item.setAmount(currentAmount + added);
-                existing.price += addedPrice;
-                restocked++;
-            } else {
-                int amount = Math.min(rolled, maxStack);
-                long price = Math.max(1, Math.round(unitPrice * amount * variance));
+                    existing.item.setAmount(currentAmount + added);
+                    existing.price += addedPrice;
+                    restocked++;
+                } else {
+                    int amount = Math.min(rolled, maxStack);
+                    long price = Math.max(1, Math.round(unitPrice * amount * variance));
 
-                Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
-                        new ItemStack(material, amount), price);
-                existingByMaterial.put(material, created);
-                restocked++;
+                    Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
+                            new ItemStack(material, amount), price);
+                    existingByMaterial.put(material, created);
+                    restocked++;
+                }
+            } catch (IllegalArgumentException e) {
+                // A handful of Material constants compile fine but have no
+                // real item form (CAVE_VINES was the first one found this way,
+                // the hard way, via a server log) - new ItemStack(material, n)
+                // throws for those. Rather than letting one bad material take
+                // down the whole restock task (and every item type after it
+                // in this pass) until someone notices and redeploys, skip just
+                // this one roll and keep going.
+                plugin.getLogger().warning("Black Market Dealer couldn't stock " + material
+                        + " - it has no item form (" + e.getMessage() + "). Skipping.");
             }
         }
 
