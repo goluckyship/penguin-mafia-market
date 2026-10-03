@@ -8,17 +8,18 @@ import java.util.Random;
 
 /**
  * Builds the fixed-shape /aura looks - right now just one: a pair of black
- * devil horns above the head with jagged red lightning-crack veins
- * branching out behind, based on a reference image of two mirrored
- * fractal/crack shapes converging into horn points. No Particle.FLAME
- * anywhere in this - every point is a colored DUST particle, so the red and
- * black are exact, not whatever fixed tint a vanilla particle happens to be.
+ * devil horns above the head plus a full pair of red demonic wings - a solid
+ * black backing with jagged red lightning-crack veins over it - running all
+ * the way down past the torso to the lower body, not just a small patch
+ * behind the shoulders. No Particle.FLAME anywhere in this - every point is
+ * a colored DUST particle, so the colors are exact, not whatever fixed tint
+ * a vanilla particle happens to be.
  *
  * Computed once (a fixed seed, so the shape is consistent across restarts
- * rather than re-rolling into a different-looking crack pattern each time)
- * and cached - AuraManager rotates/translates these same relative points
- * onto the player's current position and facing every tick, same as it does
- * for the simple ring.
+ * rather than re-rolling into a different-looking pattern every time) and
+ * cached - AuraManager rotates/translates these same relative points onto
+ * the player's current position and facing every tick, same as it does for
+ * the simple ring.
  */
 final class AuraPatterns {
 
@@ -37,25 +38,23 @@ final class AuraPatterns {
             // Two horns, mirrored left/right.
             points.addAll(horn(false));
             points.addAll(horn(true));
-            // A dense black backing behind where the cracks run - in the
-            // reference image the space around the red veins is just the
-            // picture's white background, but in-game that would be empty
-            // air (showing straight through to the sky/whatever's behind
-            // the player), which reads as a gap rather than part of the
-            // design. This fills that same wing-shaped area solid black so
-            // the red cracks look like they're running over a black wing,
-            // not floating on nothing.
+            // A dense black backing behind where the red cracks run, spanning
+            // from the shoulders all the way down past the torso to the
+            // lower body/legs - a full wing, not just a patch near the head.
+            // Without this the gaps between the red veins would just be
+            // empty air (showing straight through to whatever's behind the
+            // player), which reads as missing rather than part of the design.
             points.addAll(wingFill(false, rand));
             points.addAll(wingFill(true, rand));
-            // Several lightning-crack trunks per side, branching as they go,
-            // trailing up and out from around shoulder height - mirrored so
-            // the whole thing reads as symmetric, same as the reference image.
-            for (int i = 0; i < 3; i++) {
-                double startX = 0.12 + i * 0.05;
-                double startY = 0.1 + i * 0.25;
+            // Several red lightning-crack trunks per side, branching as they
+            // go and running the same long shoulder-to-lower-body span as the
+            // black backing - mirrored so the whole thing reads as symmetric.
+            for (int i = 0; i < 4; i++) {
+                double startX = 0.12 + i * 0.04;
+                double startY = 0.35 - i * 0.1;
                 double startZ = -0.1 - i * 0.05;
-                growCrack(points, rand, startX, startY, startZ, 0.15, 0.9 - i * 0.1, -0.35, 1.0, 0, false);
-                growCrack(points, rand, -startX, startY, startZ, -0.15, 0.9 - i * 0.1, -0.35, 1.0, 0, true);
+                growCrack(points, rand, startX, startY, startZ, 0.1, -1.0 + i * 0.05, -0.3, 2.0, 0, false);
+                growCrack(points, rand, -startX, startY, startZ, -0.1, -1.0 + i * 0.05, -0.3, 2.0, 0, true);
             }
             cachedDevil = points;
         }
@@ -79,23 +78,23 @@ final class AuraPatterns {
     }
 
     /**
-     * A dense scatter of black dust filling a leaf/wing-shaped area behind
-     * the player, in roughly the same envelope the crack trunks grow
-     * through (same starting offsets and direction, see devilAura()) -
-     * widest in the middle, tapering to nothing at the root and the tip, so
-     * it reads as a solid black wing with the red cracks running over it.
+     * A dense scatter of black dust filling a wing-shaped area behind the
+     * player that runs from the shoulders all the way down past the torso
+     * to the lower body/legs (not just a patch up near the head) - widest
+     * around the middle, tapering to nothing at the top and bottom, so it
+     * reads as a full solid black wing with the red cracks running over it.
      */
     private static List<AuraManager.RelativePoint> wingFill(boolean rightSide, Random rand) {
         List<AuraManager.RelativePoint> points = new ArrayList<>();
         double side = rightSide ? 1 : -1;
-        int count = 110;
+        int count = 220;
         for (int i = 0; i < count; i++) {
-            double t = rand.nextDouble(); // 0 = near the shoulder (root), 1 = far tip
-            double widthFactor = Math.sin(t * Math.PI); // 0 at both ends, widest at the middle
-            double spread = (rand.nextDouble() * 2 - 1) * (0.12 + widthFactor * 0.38);
-            double outward = side * (0.12 + t * 1.05 + spread * 0.5);
-            double up = 0.05 + t * 1.55 + spread * 0.35;
-            double back = -0.08 - t * 0.85;
+            double t = rand.nextDouble(); // 0 = shoulder (top), 1 = lower body/legs (bottom)
+            double widthFactor = Math.sin(t * Math.PI); // 0 at both ends, widest around the middle
+            double spread = (rand.nextDouble() * 2 - 1) * (0.12 + widthFactor * 0.55);
+            double outward = side * (0.12 + widthFactor * 0.9 + spread * 0.5);
+            double up = 0.35 - t * 2.1; // from shoulder height down past the feet
+            double back = -0.08 - widthFactor * 0.55;
             float size = 0.75f + (float) rand.nextDouble() * 0.5f;
             points.add(new AuraManager.RelativePoint(outward, up, back, HORN_BLACK, size));
         }

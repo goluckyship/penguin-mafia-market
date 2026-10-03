@@ -99,7 +99,11 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 1 && (args[0].equalsIgnoreCase("devil") || args[0].equalsIgnoreCase("horns"))) {
+        // "devil"/"horns" is a fixed-look pattern, not a color combo, so it's
+        // matched on the first word alone - a stray trailing word ("/aura
+        // devil black") is just ignored rather than falling through into the
+        // color parsing below and producing a confusing "isn't a color" error.
+        if (args[0].equalsIgnoreCase("devil") || args[0].equalsIgnoreCase("horns")) {
             AuraManager.Style style = AuraManager.Style.ofPattern(AuraPatterns.devilAura(), "devil horns");
             manager.enable(player, style);
             player.sendMessage(ChatColor.LIGHT_PURPLE + "Aura set to " + ChatColor.GRAY + "devil horns"
@@ -112,11 +116,13 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
         // the ring). Otherwise fall back to treating a single argument as a
         // plain vanilla particle name.
         List<Color> colors = new ArrayList<>();
+        String badColor = null;
         boolean allColors = true;
         for (String arg : args) {
             Color color = NAMED_COLORS.get(arg.toLowerCase());
             if (color == null) {
                 allColors = false;
+                badColor = arg;
                 break;
             }
             colors.add(color);
@@ -131,7 +137,7 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length > 1) {
-            player.sendMessage(ChatColor.RED + "\"" + args[args.length - 1] + "\" isn't a color I know. Try: "
+            player.sendMessage(ChatColor.RED + "\"" + badColor + "\" isn't a color I know. Try: "
                     + ChatColor.GRAY + String.join(", ", NAMED_COLORS.keySet()));
             return true;
         }
