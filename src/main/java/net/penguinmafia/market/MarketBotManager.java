@@ -17,33 +17,46 @@ import java.util.UUID;
 /**
  * Keeps the Black Market feeling alive even when no real players are
  * selling: every REFRESH_INTERVAL, the "Black Market Dealer" (a system
- * seller, not a real player) rolls a fresh batch of up to TARGET_COUNT
- * items from a curated, vanilla-survival-obtainable item pool, priced off
- * BASE_PRICES, and adds them on top of whatever it already has listed -
- * topping up its existing listing for a material (more quantity, more
- * price) instead of deleting and relisting everything from scratch. Past,
- * still-unsold listings are never removed or replaced by a restock; an op
- * can also trigger an extra round early with /bm restock.
+ * seller, not a real player) walks every single item in its curated,
+ * vanilla-survival-obtainable price list (BASE_PRICES) and tops up its
+ * listing for that material up to MIN_STOCK_STACKS worth of full stacks
+ * (20 stacks by default - e.g. 1280 for a 64-stackable block, 20 for a
+ * tool/armor piece that can only ever "stack" to 1) - so every item the
+ * dealer carries always has deep, multi-stack stock rather than relying on
+ * random chance to touch each one. A listing already at or above that
+ * floor is left alone rather than piled even higher. Past, still-unsold
+ * listings are never removed or replaced by a restock; an op can also
+ * trigger an extra round early with /bm restock.
+ *
+ * A listing's quantity is just the amount field on its backing ItemStack,
+ * not a real inventory slot, so it happily holds far more than one
+ * in-game stack (1280 for a diamond block, say) with no special handling -
+ * Bukkit's own Inventory#addItem splits a stack like that back into
+ * proper max-size stacks across the buyer's inventory (and the rest onto
+ * the ground) the moment it's actually handed over on purchase.
  *
  * Deliberately excludes anything creative-only, admin-only, or otherwise
  * not obtainable by a normal survival player - no dragon eggs, spawners,
  * command/structure blocks, barriers, etc (see BLOCKED, enforced on top of
- * the curated pool as a belt-and-suspenders check). Rare/end-game items
- * that genuinely are vanilla-obtainable (netherite, elytra, totems...) are
- * allowed, just priced steeply so they aren't a cheap shortcut.
- *
- * Pool and stack sizes are tuned generous on purpose: a wide variety of
- * blocks/food/tools/decor beyond just raw resources, firework rockets
- * stocked extra heavily as a specialty, and per-listing quantities rolled
- * roughly tenfold over a bare-bones shop (still capped at each material's
- * real stack limit, so tools/armor stay realistic at 1).
+ * BASE_PRICES as a belt-and-suspenders check). Rare/end-game items that
+ * genuinely are vanilla-obtainable (netherite, elytra, totems...) are
+ * allowed, just priced steeply so a deep stock of them isn't a cheap
+ * shortcut.
  */
 public class MarketBotManager {
 
     public static final UUID SELLER_ID = UUID.fromString("00000000-0000-4000-a000-000000000bee");
     public static final String SELLER_NAME = "Black Market Dealer";
 
-    private static final int TARGET_COUNT = 1000;
+    /**
+     * Every item the dealer carries is kept stocked up to this many full
+     * stacks (by that material's own max stack size) at minimum - "20
+     * stacks" means 20 * 64 = 1280 for an ordinary stackable item, or just
+     * 20 units for something that can only ever stack to 1 (tools, armor,
+     * swords...).
+     */
+    private static final int MIN_STOCK_STACKS = 20;
+
     private static final long REFRESH_INTERVAL_TICKS = 20L * 60L * 10L; // 10 minutes
 
     /**
@@ -119,7 +132,7 @@ public class MarketBotManager {
         put(Material.NETHERITE_LEGGINGS, 7500); put(Material.NETHERITE_BOOTS, 5000);
         put(Material.BOW, 150); put(Material.CROSSBOW, 200); put(Material.SHIELD, 120);
 
-        // --- Rockets - the requested specialty item; weighted extra-heavy in the pool below ---
+        // --- Rockets - the requested specialty item ---
         put(Material.FIREWORK_ROCKET, 20);
 
         // --- More wood/wool/decor variety ---
@@ -485,19 +498,11 @@ public class MarketBotManager {
 
     private final PenguinMafiaMarket plugin;
     private final MarketManager market;
-    private final List<Material> pool;
     private final Random random = new Random();
 
     public MarketBotManager(PenguinMafiaMarket plugin, MarketManager market) {
         this.plugin = plugin;
         this.market = market;
-        this.pool = new ArrayList<>(BASE_PRICES.keySet());
-        // Rockets are the requested specialty item - stock the pool with nine extra
-        // entries (ten total, counting the one in BASE_PRICES) so they're drawn roughly
-        // ten times as often as an ordinary single-weighted item below.
-        for (int i = 0; i < 9; i++) {
-            pool.add(Material.FIREWORK_ROCKET);
-        }
     }
 
     /** Starts the restock timer - an immediate first stock, then every REFRESH_INTERVAL after that. */
@@ -513,18 +518,14 @@ public class MarketBotManager {
     }
 
     /**
-     * Rolls a fresh batch of up to TARGET_COUNT items and adds them to the
-     * dealer's stock - never wipes or replaces what's already listed. For
-     * each roll, an existing dealer listing of that same material gets
-     * topped up (its quantity and price both increased) instead of a brand
-     * new listing being created next to it; a material only gets a new
-     * listing the first time it comes up, or again later if every earlier
-     * listing of it happened to get fully bought out. Once a material's
-     * listing is already sitting at a full stack, further rolls of it this
-     * round are skipped rather than spawning a second listing for the
-     * overflow. Also the handler behind the op-only /bm restock command, so
-     * the exact same logic runs whether it's the timer or a person firing
-     * it early.
+     * Walks every item in BASE_PRICES and tops up the dealer's listing for
+     * it (creating one if it doesn't have one yet) until it holds at least
+     * MIN_STOCK_STACKS full stacks of that material - never wipes or
+     * replaces what's already listed, and a listing already at or above
+     * that floor (because players haven't bought much of it, say) is left
+     * untouched rather than piled even higher. Also the handler behind the
+     * op-only /bm restock command, so the exact same logic runs whether
+     * it's the timer or a person firing it early.
      *
      * @return how many item types received new stock this round
      */
@@ -532,34 +533,35 @@ public class MarketBotManager {
         Map<Material, Listing> existingByMaterial = consolidateDuplicateListings();
 
         int restocked = 0;
-        for (int i = 0; i < TARGET_COUNT; i++) {
-            Material material = pool.get(random.nextInt(pool.size()));
+        for (Map.Entry<Material, Long> entry : BASE_PRICES.entrySet()) {
+            Material material = entry.getKey();
             if (BLOCKED.contains(material)) continue; // safety net, should never actually trigger
 
             try {
-                long unitPrice = BASE_PRICES.get(material);
-                int rolled = rollAmount(unitPrice, material);
+                long unitPrice = entry.getValue();
+                int maxStack = material.getMaxStackSize();
+                // "20 stacks" - 1280 for an ordinary 64-stackable item, just 20
+                // units for something that can only ever stack to 1 (tools, armor).
+                int target = maxStack * MIN_STOCK_STACKS;
                 // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
                 double variance = 0.85 + random.nextDouble() * 0.30;
-                int maxStack = material.getMaxStackSize();
 
                 Listing existing = existingByMaterial.get(material);
                 if (existing != null) {
                     int currentAmount = existing.item.getAmount();
-                    if (currentAmount >= maxStack) continue; // already a full stack, skip this roll
+                    if (currentAmount >= target) continue; // already deeply stocked, nothing to top up
 
-                    int added = Math.min(rolled, maxStack - currentAmount);
+                    int added = target - currentAmount;
                     long addedPrice = Math.max(1, Math.round(unitPrice * added * variance));
 
-                    existing.item.setAmount(currentAmount + added);
+                    existing.item.setAmount(target);
                     existing.price += addedPrice;
                     restocked++;
                 } else {
-                    int amount = Math.min(rolled, maxStack);
-                    long price = Math.max(1, Math.round(unitPrice * amount * variance));
+                    long price = Math.max(1, Math.round(unitPrice * target * variance));
 
                     Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
-                            new ItemStack(material, amount), price);
+                            new ItemStack(material, target), price);
                     existingByMaterial.put(material, created);
                     restocked++;
                 }
@@ -570,7 +572,7 @@ public class MarketBotManager {
                 // throws for those. Rather than letting one bad material take
                 // down the whole restock task (and every item type after it
                 // in this pass) until someone notices and redeploys, skip just
-                // this one roll and keep going.
+                // this one and keep going.
                 plugin.getLogger().warning("Black Market Dealer couldn't stock " + material
                         + " - it has no item form (" + e.getMessage() + "). Skipping.");
             }
@@ -624,12 +626,15 @@ public class MarketBotManager {
                 totalPrice += listing.price;
             }
 
-            int maxStack = material.getMaxStackSize();
-            if (totalAmount > maxStack) {
+            // Cap at the same "20 stacks" ceiling refresh() stocks up to, not a
+            // single real stack - these listings are allowed to hold many stacks
+            // worth of a material at once (see the class javadoc).
+            long cap = (long) material.getMaxStackSize() * MIN_STOCK_STACKS;
+            if (totalAmount > cap) {
                 // Scale the price down to match only the quantity that actually
                 // fits, instead of charging full combined price for a capped stack.
-                totalPrice = Math.max(1, Math.round(totalPrice * (maxStack / (double) totalAmount)));
-                totalAmount = maxStack;
+                totalPrice = Math.max(1, Math.round(totalPrice * (cap / (double) totalAmount)));
+                totalAmount = cap;
             }
 
             keeper.item.setAmount((int) totalAmount);
@@ -643,19 +648,4 @@ public class MarketBotManager {
         return result;
     }
 
-    /**
-     * Cheap/common items list in bigger stacks; expensive/rare items list in small
-     * quantities. Ranges are rolled roughly tenfold over the original bare-bones shop,
-     * then capped at the material's real max stack size - so a stack of dirt can
-     * genuinely jump from "1-64" to "10-640 capped at 64", while a sword or piece of
-     * armor (max stack 1) always lands on exactly 1 no matter how high the roll goes.
-     */
-    private int rollAmount(long unitPrice, Material material) {
-        int amount;
-        if (unitPrice >= 1000) amount = 10 * (1 + random.nextInt(2));   // was 1-2, now 10-20
-        else if (unitPrice >= 100) amount = 10 * (1 + random.nextInt(5));  // was 1-5, now 10-50
-        else if (unitPrice >= 20) amount = 10 * (1 + random.nextInt(16));  // was 1-16, now 10-160
-        else amount = 10 * (1 + random.nextInt(64));                       // was 1-64, now 10-640
-        return Math.min(amount, material.getMaxStackSize());
-    }
 }
