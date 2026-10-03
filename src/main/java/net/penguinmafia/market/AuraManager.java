@@ -44,22 +44,56 @@ public class AuraManager implements Listener {
     public static final class Style {
         final Particle particle;
         final List<Color> palette;
+        final List<RelativePoint> pattern;
+        final String label;
 
-        private Style(Particle particle, List<Color> palette) {
+        private Style(Particle particle, List<Color> palette, List<RelativePoint> pattern, String label) {
             this.particle = particle;
             this.palette = palette;
+            this.pattern = pattern;
+            this.label = label;
         }
 
         public static Style of(Particle particle) {
-            return new Style(particle, null);
+            return new Style(particle, null, null, null);
         }
 
         public static Style ofPalette(List<Color> colors) {
-            return new Style(null, colors);
+            return new Style(null, colors, null, null);
+        }
+
+        /** A fixed decorative shape (cracks, horns...) drawn relative to the player each tick - see RelativePoint. */
+        public static Style ofPattern(List<RelativePoint> points, String label) {
+            return new Style(null, null, points, label);
         }
 
         public String describe() {
+            if (pattern != null) return label;
             return palette != null ? "custom colors" : particle.name().toLowerCase();
+        }
+    }
+
+    /**
+     * One point in a fixed decorative shape, in a coordinate space relative
+     * to the player: x = sideways (positive = their right), y = straight up
+     * from roughly chest height, z = forward(+)/backward(-) relative to the
+     * way they're currently facing. Drawn fresh every tick by rotating this
+     * offset to match the player's current yaw and adding it to their
+     * current location, which is what makes a fixed shape like a pair of
+     * horns or a set of lightning cracks "attach" to a moving, turning
+     * player instead of only working while they stand still facing one way.
+     */
+    public static final class RelativePoint {
+        final double x, y, z;
+        final Color color;
+        final float size;
+
+        public RelativePoint(double x, double y, double z, Color color, float size) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.color = color;
+            this.size = size;
         }
     }
 
@@ -84,7 +118,38 @@ public class AuraManager implements Listener {
         for (Map.Entry<UUID, Style> entry : active.entrySet()) {
             Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
             if (player == null || !player.isOnline()) continue;
-            drawRing(player, entry.getValue());
+            Style style = entry.getValue();
+            if (style.pattern != null) {
+                drawPattern(player, style.pattern);
+            } else {
+                drawRing(player, style);
+            }
+        }
+    }
+
+    /**
+     * Draws a fixed decorative shape (RelativePoint list) attached to the
+     * player: each point's local (sideways/up/forward) offset is rotated to
+     * match the player's current facing direction, then added to their
+     * current location - so the shape turns and moves with them every tick,
+     * same as the ring does, just without the spin.
+     */
+    private void drawPattern(Player player, List<RelativePoint> points) {
+        Location base = player.getLocation();
+        double yawRad = Math.toRadians(base.getYaw());
+        double forwardX = -Math.sin(yawRad);
+        double forwardZ = Math.cos(yawRad);
+        double rightX = forwardZ;
+        double rightZ = -forwardX;
+        double baseY = base.getY() + 1.1; // roughly chest/shoulder height, not feet
+
+        for (RelativePoint p : points) {
+            double worldX = base.getX() + rightX * p.x + forwardX * p.z;
+            double worldZ = base.getZ() + rightZ * p.x + forwardZ * p.z;
+            double worldY = baseY + p.y;
+            Location point = new Location(base.getWorld(), worldX, worldY, worldZ);
+            player.getWorld().spawnParticle(Particle.DUST, point, 0, 0, 0, 0, 0,
+                    new Particle.DustOptions(p.color, p.size));
         }
     }
 

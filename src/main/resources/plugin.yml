@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.28.1
+version: 1.29.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -172,4 +172,5 @@ commands:
       /aura <particle> - turn it on with a specific particle (e.g. end_rod, heart, flame, witch, portal)
       /aura <color> [color2] [color3] ... - a custom-colored ring (e.g. "/aura red black"),
       cycling through each named color around the ring
+      /aura devil - black devil horns above your head with jagged red lightning-crack veins (no flame particle)
       /aura off - turn it off

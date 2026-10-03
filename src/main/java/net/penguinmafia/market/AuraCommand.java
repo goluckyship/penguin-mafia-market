@@ -99,6 +99,14 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (args.length == 1 && (args[0].equalsIgnoreCase("devil") || args[0].equalsIgnoreCase("horns"))) {
+            AuraManager.Style style = AuraManager.Style.ofPattern(AuraPatterns.devilAura(), "devil horns");
+            manager.enable(player, style);
+            player.sendMessage(ChatColor.LIGHT_PURPLE + "Aura set to " + ChatColor.GRAY + "devil horns"
+                    + ChatColor.LIGHT_PURPLE + "." + ChatColor.GRAY + " /aura off to stop.");
+            return true;
+        }
+
         // If every argument names a color, build a custom DUST ring cycling
         // through them (e.g. "/aura red black" alternates red/black around
         // the ring). Otherwise fall back to treating a single argument as a
@@ -150,7 +158,10 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
         String last = args[args.length - 1].toLowerCase();
         List<String> options = new ArrayList<>(SUGGESTED_PARTICLES);
         options.addAll(NAMED_COLORS.keySet());
-        if (args.length == 1) options.add("off");
+        if (args.length == 1) {
+            options.add("off");
+            options.add("devil");
+        }
         List<String> out = new ArrayList<>();
         for (String option : options) {
             if (option.startsWith(last)) out.add(option);
