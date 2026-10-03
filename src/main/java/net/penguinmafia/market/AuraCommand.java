@@ -142,6 +142,17 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // Vanilla WITCH particle is a fixed purple swirl - it can't be
+        // recolored like DUST can, so "witch" is special-cased to a plain
+        // black DUST ring instead of the real (purple) particle.
+        if (args[0].equalsIgnoreCase("witch")) {
+            AuraManager.Style style = AuraManager.Style.ofPalette(List.of(NAMED_COLORS.get("black")));
+            manager.enable(player, style);
+            player.sendMessage(ChatColor.LIGHT_PURPLE + "Aura set to " + ChatColor.GRAY + "black"
+                    + ChatColor.LIGHT_PURPLE + "." + ChatColor.GRAY + " /aura off to stop.");
+            return true;
+        }
+
         Particle particle;
         try {
             particle = Particle.valueOf(args[0].toUpperCase());
