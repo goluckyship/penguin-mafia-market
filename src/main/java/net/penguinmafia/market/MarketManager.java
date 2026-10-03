@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Holds every active listing in memory, backed by listings.yml. */
 public class MarketManager {
@@ -24,6 +25,10 @@ public class MarketManager {
 
     private final Map<Integer, Listing> listings = new LinkedHashMap<>();
     private int nextId = 1;
+
+    /** Coalesces save() calls into at most one disk write in flight at a time - see save(). */
+    private final AtomicBoolean saveInProgress = new AtomicBoolean(false);
+    private volatile boolean saveQueued = false;
 
     /** Optional - set via setLedger() once PenguinMafiaMarket creates one, so every completed buy() gets recorded for /bm history. Left null and skipped if never set. */
     private TransactionLedger ledger;
@@ -56,21 +61,81 @@ public class MarketManager {
         }
     }
 
+    /**
+     * Persists every listing to disk - called after every buy/sell/cancel/
+     * admin edit, and once per batch from the Black Market Dealer's restock.
+     * The in-memory `listings` map (and so the actual game effect of
+     * whatever just happened) is already final the instant this is called;
+     * only the YAML write is deferred to a background thread, coalesced so
+     * at most one write is ever in flight. With up to several thousand
+     * dealer listings now that every item is stocked many stacks deep,
+     * re-serializing all of them synchronously on the main thread for every
+     * single /bm click used to visibly stall the server and swallow fast
+     * repeated clicks - see saveNow() for the one place a synchronous write
+     * is still needed (plugin shutdown, where no async task gets to run).
+     */
     public void save() {
-        config.set("listings", null);
+        if (saveInProgress.compareAndSet(false, true)) {
+            runAsyncSave();
+        } else {
+            // A write is already in flight - don't pile up a second one behind
+            // it with a now-stale snapshot; just note that another pass is
+            // needed once the current write finishes.
+            saveQueued = true;
+        }
+    }
+
+    private void runAsyncSave() {
+        List<ListingSnapshot> snapshot = snapshotListings();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            writeSnapshot(snapshot);
+            saveInProgress.set(false);
+            if (saveQueued) {
+                saveQueued = false;
+                // Hop back onto the main thread to safely read `listings` again
+                // (it's not thread-safe) before starting the next write.
+                Bukkit.getScheduler().runTask(plugin, this::save);
+            }
+        });
+    }
+
+    /**
+     * Writes out the current listings immediately and synchronously, on
+     * whatever thread calls it - only safe/needed at plugin shutdown, since
+     * Bukkit won't run a newly scheduled async task (what save() normally
+     * uses) once the plugin is disabling.
+     */
+    public void saveNow() {
+        writeSnapshot(snapshotListings());
+    }
+
+    /** Clones each listing's mutable state so the background thread never touches live objects. */
+    private List<ListingSnapshot> snapshotListings() {
+        List<ListingSnapshot> snapshot = new ArrayList<>(listings.size());
         for (Listing l : listings.values()) {
-            String path = "listings." + l.id;
-            config.set(path + ".seller", l.seller.toString());
-            config.set(path + ".sellerName", l.sellerName);
-            config.set(path + ".price", l.price);
-            config.set(path + ".item", l.item);
+            snapshot.add(new ListingSnapshot(l.id, l.seller, l.sellerName, l.price, l.item.clone()));
+        }
+        return snapshot;
+    }
+
+    private void writeSnapshot(List<ListingSnapshot> snapshot) {
+        YamlConfiguration out = new YamlConfiguration();
+        for (ListingSnapshot l : snapshot) {
+            String path = "listings." + l.id();
+            out.set(path + ".seller", l.seller().toString());
+            out.set(path + ".sellerName", l.sellerName());
+            out.set(path + ".price", l.price());
+            out.set(path + ".item", l.item());
         }
         try {
-            config.save(file);
+            out.save(file);
         } catch (IOException e) {
             plugin.getLogger().warning("Could not save listings.yml: " + e.getMessage());
         }
     }
+
+    /** Immutable, thread-safe copy of a Listing's fields at the moment of a save() call. */
+    private record ListingSnapshot(int id, UUID seller, String sellerName, long price, ItemStack item) {}
 
     public int getListingCount() {
         return listings.size();

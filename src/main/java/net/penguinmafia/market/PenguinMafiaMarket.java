@@ -133,7 +133,11 @@ public final class PenguinMafiaMarket extends JavaPlugin {
     @Override
     public void onDisable() {
         if (economy != null) economy.save();
-        if (marketManager != null) marketManager.save();
+        // saveNow(), not save() - Bukkit won't run a newly-scheduled async task
+        // (what the normal save() path defers to) once the plugin is disabling,
+        // so this has to write synchronously right here or the last few moments
+        // of market activity would be lost on every shutdown/restart.
+        if (marketManager != null) marketManager.saveNow();
         if (announcementManager != null) announcementManager.shutdown();
         if (playtimeRewardManager != null) playtimeRewardManager.shutdown();
         if (jobsManager != null) jobsManager.save();
