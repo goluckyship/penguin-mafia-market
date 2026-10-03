@@ -37,6 +37,16 @@ final class AuraPatterns {
             // Two horns, mirrored left/right.
             points.addAll(horn(false));
             points.addAll(horn(true));
+            // A dense black backing behind where the cracks run - in the
+            // reference image the space around the red veins is just the
+            // picture's white background, but in-game that would be empty
+            // air (showing straight through to the sky/whatever's behind
+            // the player), which reads as a gap rather than part of the
+            // design. This fills that same wing-shaped area solid black so
+            // the red cracks look like they're running over a black wing,
+            // not floating on nothing.
+            points.addAll(wingFill(false, rand));
+            points.addAll(wingFill(true, rand));
             // Several lightning-crack trunks per side, branching as they go,
             // trailing up and out from around shoulder height - mirrored so
             // the whole thing reads as symmetric, same as the reference image.
@@ -64,6 +74,30 @@ final class AuraPatterns {
             double forward = 0.05 + 0.22 * Math.sin(t * Math.PI * 0.9); // curls forward then tip bends back a touch
             float size = (float) (1.5 - t * 0.9); // thick base, pointed tip
             points.add(new AuraManager.RelativePoint(outward, up, forward, HORN_BLACK, Math.max(0.45f, size)));
+        }
+        return points;
+    }
+
+    /**
+     * A dense scatter of black dust filling a leaf/wing-shaped area behind
+     * the player, in roughly the same envelope the crack trunks grow
+     * through (same starting offsets and direction, see devilAura()) -
+     * widest in the middle, tapering to nothing at the root and the tip, so
+     * it reads as a solid black wing with the red cracks running over it.
+     */
+    private static List<AuraManager.RelativePoint> wingFill(boolean rightSide, Random rand) {
+        List<AuraManager.RelativePoint> points = new ArrayList<>();
+        double side = rightSide ? 1 : -1;
+        int count = 110;
+        for (int i = 0; i < count; i++) {
+            double t = rand.nextDouble(); // 0 = near the shoulder (root), 1 = far tip
+            double widthFactor = Math.sin(t * Math.PI); // 0 at both ends, widest at the middle
+            double spread = (rand.nextDouble() * 2 - 1) * (0.12 + widthFactor * 0.38);
+            double outward = side * (0.12 + t * 1.05 + spread * 0.5);
+            double up = 0.05 + t * 1.55 + spread * 0.35;
+            double back = -0.08 - t * 0.85;
+            float size = 0.75f + (float) rand.nextDouble() * 0.5f;
+            points.add(new AuraManager.RelativePoint(outward, up, back, HORN_BLACK, size));
         }
         return points;
     }
