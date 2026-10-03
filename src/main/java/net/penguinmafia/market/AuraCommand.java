@@ -111,6 +111,15 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // "om" - a dark storm cloud hovering overhead, same fixed-pattern deal as devil horns.
+        if (args[0].equalsIgnoreCase("om")) {
+            AuraManager.Style style = AuraManager.Style.ofPattern(AuraPatterns.omCloud(), "om");
+            manager.enable(player, style);
+            player.sendMessage(ChatColor.LIGHT_PURPLE + "Aura set to " + ChatColor.GRAY + "om"
+                    + ChatColor.LIGHT_PURPLE + "." + ChatColor.GRAY + " /aura off to stop.");
+            return true;
+        }
+
         // If every argument names a color, build a custom DUST ring cycling
         // through them (e.g. "/aura red black" alternates red/black around
         // the ring). Otherwise fall back to treating a single argument as a
@@ -178,6 +187,7 @@ public class AuraCommand implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             options.add("off");
             options.add("devil");
+            options.add("om");
         }
         List<String> out = new ArrayList<>();
         for (String option : options) {

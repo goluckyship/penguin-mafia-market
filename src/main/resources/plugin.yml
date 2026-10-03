@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.29.3
+version: 1.30.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -173,4 +173,5 @@ commands:
       /aura <color> [color2] [color3] ... - a custom-colored ring (e.g. "/aura red black"),
       cycling through each named color around the ring
       /aura devil - black devil horns plus full red-and-black demonic wings running down to your lower body (no flame particle)
+      /aura om - a dark storm cloud hovering over your head
       /aura off - turn it off

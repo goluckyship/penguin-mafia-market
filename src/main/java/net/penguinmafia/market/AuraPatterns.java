@@ -28,8 +28,11 @@ final class AuraPatterns {
     private static final Color RED_BRIGHT = Color.fromRGB(255, 25, 20);
     private static final Color RED_DARK = Color.fromRGB(60, 5, 5);
     private static final Color HORN_BLACK = Color.fromRGB(12, 12, 14);
+    private static final Color CLOUD_DARK = Color.fromRGB(35, 35, 40);
+    private static final Color CLOUD_LIGHT = Color.fromRGB(70, 70, 78);
 
     private static List<AuraManager.RelativePoint> cachedDevil;
+    private static List<AuraManager.RelativePoint> cachedOm;
 
     static List<AuraManager.RelativePoint> devilAura() {
         if (cachedDevil == null) {
@@ -59,6 +62,43 @@ final class AuraPatterns {
             cachedDevil = points;
         }
         return cachedDevil;
+    }
+
+    /**
+     * "om": a flattened dark storm cloud hovering just above the player's
+     * head, built from a dense scatter of dark-gray-to-black dust packed
+     * into a lumpy, puffy blob (a handful of overlapping bulges rather than
+     * a perfect sphere, so it reads as a cloud and not a ball) - no vanilla
+     * CLOUD particle involved, since that one's a fixed light-gray/white and
+     * can't be darkened.
+     */
+    static List<AuraManager.RelativePoint> omCloud() {
+        if (cachedOm == null) {
+            List<AuraManager.RelativePoint> points = new ArrayList<>();
+            Random rand = new Random(90210); // fixed seed - same cloud shape every time
+            // A handful of overlapping puff centers, each with its own scatter
+            // of points around it, so the outline is lumpy instead of a sphere.
+            double[][] puffs = {
+                    {0.0, 0.0, 0.0, 0.55}, {0.35, 0.05, 0.1, 0.4}, {-0.35, 0.03, -0.05, 0.4},
+                    {0.15, 0.12, -0.3, 0.35}, {-0.15, 0.1, 0.3, 0.35}, {0.0, -0.1, 0.0, 0.3}
+            };
+            for (double[] puff : puffs) {
+                int count = 40;
+                for (int i = 0; i < count; i++) {
+                    double radius = puff[3] * Math.cbrt(rand.nextDouble());
+                    double theta = rand.nextDouble() * Math.PI * 2;
+                    double phi = Math.acos(2 * rand.nextDouble() - 1);
+                    double x = puff[0] + radius * Math.sin(phi) * Math.cos(theta);
+                    double y = puff[1] + radius * Math.cos(phi) * 0.6; // flattened vertically
+                    double z = puff[2] + radius * Math.sin(phi) * Math.sin(theta);
+                    Color color = lerp(CLOUD_LIGHT, CLOUD_DARK, rand.nextDouble());
+                    float size = 1.0f + (float) rand.nextDouble() * 0.6f;
+                    points.add(new AuraManager.RelativePoint(x, 1.75 + y, z, color, size));
+                }
+            }
+            cachedOm = points;
+        }
+        return cachedOm;
     }
 
     /** One horn: a curved, tapering line of black dust rising from the side of the head and curling forward at the tip. */
