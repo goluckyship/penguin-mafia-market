@@ -73,8 +73,7 @@ public class JobsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (jobs.getJoinedCount(player) >= JobsManager.MAX_CONCURRENT_JOBS) {
-            player.sendMessage(ChatColor.RED + "You can only hold " + JobsManager.MAX_CONCURRENT_JOBS
-                    + " jobs at once - /job leave <job> to make room.");
+            player.sendMessage(ChatColor.RED + "You can only hold one job at a time - /job leave <job> first to switch.");
             return true;
         }
         jobs.join(player, job);
@@ -107,7 +106,7 @@ public class JobsCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleList(CommandSender sender) {
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "--- Jobs (" + JobsManager.MAX_CONCURRENT_JOBS + " at a time) ---");
+        sender.sendMessage(ChatColor.LIGHT_PURPLE + "--- Jobs (pick one) ---");
         for (Job job : Job.values()) {
             sender.sendMessage(job.colored() + ChatColor.GRAY + " - " + job.description);
         }
@@ -185,9 +184,8 @@ public class JobsCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "--- Jobs ---");
         sender.sendMessage(ChatColor.GRAY + "/job " + ChatColor.WHITE + "- see your own job levels and progress");
         sender.sendMessage(ChatColor.GRAY + "/job list " + ChatColor.WHITE + "- see every job and what it pays for");
-        sender.sendMessage(ChatColor.GRAY + "/job join <job> " + ChatColor.WHITE + "- join a job (up to "
-                + JobsManager.MAX_CONCURRENT_JOBS + " at once)");
-        sender.sendMessage(ChatColor.GRAY + "/job leave <job> " + ChatColor.WHITE + "- leave a job (resets its progress)");
+        sender.sendMessage(ChatColor.GRAY + "/job join <job> " + ChatColor.WHITE + "- join a job (only one at a time)");
+        sender.sendMessage(ChatColor.GRAY + "/job leave <job> " + ChatColor.WHITE + "- leave your job (resets its progress) so you can join another");
         sender.sendMessage(ChatColor.GRAY + "/job stats [player] " + ChatColor.WHITE + "- check your or someone else's job levels");
         sender.sendMessage(ChatColor.GRAY + "/job top <job> " + ChatColor.WHITE + "- the top 10 players in a job");
     }

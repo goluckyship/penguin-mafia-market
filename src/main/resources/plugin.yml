@@ -115,7 +115,7 @@ commands:
     usage: |
       /job - see your own job levels and progress
       /job list - see every job and what it pays for
-      /job join <job> - join a job (up to 2 at once)
+      /job join <job> - join a job (only one at a time)
       /job leave <job> - leave a job (resets its progress)
       /job stats [player] - check your or someone else's job levels
       /job top <job> - the top 10 players in a job

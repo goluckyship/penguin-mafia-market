@@ -18,17 +18,17 @@ import java.util.UUID;
  * save after every change so progress survives a crash, not just a clean
  * shutdown.
  *
- * Players can hold up to MAX_CONCURRENT_JOBS jobs at once - enough to mix
- * and match (say, Miner + Hunter) without turning the whole server into a
- * five-job grind simultaneously. Leveling is a simple increasing XP curve:
- * each level needs a bit more XP than the last, and a player's level in a
- * job gives their payout from that job a small percentage bonus, so sticking
- * with one job over time is modestly better than spreading XP thin.
+ * Players can only hold one job at a time (MAX_CONCURRENT_JOBS) - picking a
+ * specialty rather than stacking every payout source at once. Leveling is a
+ * simple increasing XP curve: each level needs a bit more XP than the last,
+ * and a player's level in their job gives its payout a small percentage
+ * bonus, so sticking with it over time is modestly better than hopping
+ * between jobs for XP.
  */
 public class JobsManager {
 
     /** How many jobs a single player can have joined at the same time. */
-    public static final int MAX_CONCURRENT_JOBS = 2;
+    public static final int MAX_CONCURRENT_JOBS = 1;
 
     /** Hard level cap - payout bonus stops growing past this, so a job never becomes a money printer. */
     public static final int MAX_LEVEL = 50;
