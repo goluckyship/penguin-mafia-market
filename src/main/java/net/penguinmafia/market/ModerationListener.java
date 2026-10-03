@@ -9,6 +9,7 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.potion.PotionEffectType;
 
 /**
  * Enforces the live effects ModerationManager tracks: a frozen player can
@@ -65,10 +66,18 @@ public class ModerationListener implements Listener {
      * A freeze is meant to hold someone in place for an active AFK-check or
      * dispute, not to be a silent standing punishment that outlives the
      * session - so it's lifted automatically the moment they disconnect.
-     * Mutes and warnings are unaffected and persist across logins.
+     * Mutes and warnings are unaffected and persist across logins. The
+     * Blindness/Darkness "black screen" effect is cleared here too - potion
+     * effects are saved into the player's own data and would otherwise still
+     * be active (and never removable, since /mod freeze already shows them
+     * as not frozen) the next time they log back in.
      */
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        moderation.unfreeze(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        if (!moderation.unfreeze(player.getUniqueId())) return;
+
+        player.removePotionEffect(PotionEffectType.BLINDNESS);
+        player.removePotionEffect(PotionEffectType.DARKNESS);
     }
 }

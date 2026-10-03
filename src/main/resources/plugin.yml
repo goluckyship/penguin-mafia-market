@@ -133,7 +133,7 @@ commands:
   mod:
     description: Op-only moderation toolbox - freeze, mute, warn, and warning history.
     usage: |
-      /mod freeze <player> - lock a player in place (lifts automatically on disconnect)
+      /mod freeze <player> - lock a player in place with a lightning strike, a black screen, and a FROZEN title (lifts automatically on disconnect)
       /mod unfreeze <player> - let them move again
       /mod mute <player> <minutes> [reason] - block their chat for a while
       /mod unmute <player> - lift a mute early

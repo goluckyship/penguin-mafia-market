@@ -8,6 +8,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,6 +83,21 @@ public class ModerationCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GRAY + target.getName() + " is already frozen.");
             return true;
         }
+
+        // Visual-only lightning bolt - no damage, no block/fire ignition, just the flash and
+        // crack sound, so it reads as a dramatic "you've been caught" moment rather than an attack.
+        target.getWorld().strikeLightningEffect(target.getLocation());
+
+        // Blindness + Darkness together black out the screen almost completely (Darkness alone
+        // still lets some ambient light through) for as long as the freeze lasts - removed again
+        // the moment they're unfrozen. No particles/icon so it doesn't clutter their HUD further.
+        int oneHourTicks = 20 * 60 * 60;
+        target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, oneHourTicks, 0, false, false, false));
+        target.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, oneHourTicks, 0, false, false, false));
+
+        target.sendTitle(ChatColor.RED + "" + ChatColor.BOLD + "FROZEN",
+                ChatColor.GRAY + "A staff member has frozen you in place", 10, 70, 20);
+
         sender.sendMessage(ChatColor.GOLD + "[Mod] " + ChatColor.GRAY + "Froze " + target.getName() + " in place.");
         target.sendMessage(ChatColor.RED + "You've been frozen in place by a staff member.");
         return true;
@@ -100,6 +117,11 @@ public class ModerationCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatColor.GRAY + target.getName() + " wasn't frozen.");
             return true;
         }
+
+        target.removePotionEffect(PotionEffectType.BLINDNESS);
+        target.removePotionEffect(PotionEffectType.DARKNESS);
+        target.sendTitle(ChatColor.GREEN + "" + ChatColor.BOLD + "UNFROZEN", ChatColor.GRAY + "You can move again", 10, 50, 20);
+
         sender.sendMessage(ChatColor.GOLD + "[Mod] " + ChatColor.GRAY + "Unfroze " + target.getName() + ".");
         target.sendMessage(ChatColor.GRAY + "You've been unfrozen - you can move again.");
         return true;
@@ -311,7 +333,7 @@ public class ModerationCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "--- Moderation ---");
-        sender.sendMessage(ChatColor.GRAY + "/mod freeze <player> " + ChatColor.WHITE + "- lock a player in place (lifts automatically on disconnect)");
+        sender.sendMessage(ChatColor.GRAY + "/mod freeze <player> " + ChatColor.WHITE + "- lock a player in place with a lightning strike, a black screen, and a FROZEN title (lifts automatically on disconnect)");
         sender.sendMessage(ChatColor.GRAY + "/mod unfreeze <player> " + ChatColor.WHITE + "- let them move again");
         sender.sendMessage(ChatColor.GRAY + "/mod mute <player> <minutes> [reason] " + ChatColor.WHITE + "- block their chat for a while");
         sender.sendMessage(ChatColor.GRAY + "/mod unmute <player> " + ChatColor.WHITE + "- lift a mute early");
