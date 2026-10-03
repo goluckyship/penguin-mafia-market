@@ -18,22 +18,20 @@ import java.util.UUID;
  * Keeps the Black Market feeling alive even when no real players are
  * selling: every REFRESH_INTERVAL, the "Black Market Dealer" (a system
  * seller, not a real player) walks every single item in its curated,
- * vanilla-survival-obtainable price list (BASE_PRICES) and tops up its
- * listing for that material up to MIN_STOCK_STACKS worth of full stacks
- * (20 stacks by default - e.g. 1280 for a 64-stackable block, 20 for a
- * tool/armor piece that can only ever "stack" to 1) - so every item the
- * dealer carries always has deep, multi-stack stock rather than relying on
- * random chance to touch each one. A listing already at or above that
- * floor is left alone rather than piled even higher. Past, still-unsold
- * listings are never removed or replaced by a restock; an op can also
- * trigger an extra round early with /bm restock.
- *
- * A listing's quantity is just the amount field on its backing ItemStack,
- * not a real inventory slot, so it happily holds far more than one
- * in-game stack (1280 for a diamond block, say) with no special handling -
- * Bukkit's own Inventory#addItem splits a stack like that back into
- * proper max-size stacks across the buyer's inventory (and the rest onto
- * the ground) the moment it's actually handed over on purchase.
+ * vanilla-survival-obtainable price list (BASE_PRICES) and, for each one,
+ * makes sure there are at least MIN_STOCK_STACKS separate listings of it
+ * (20 by default) - each its own full stack (64 of a block, 16 of an
+ * ender pearl, 1 of a sword/armor piece - whatever that material's real
+ * max stack size is). So "20 stacks" of diamond blocks means 20 individual
+ * stack-of-64 listings a player can browse and buy one at a time, not one
+ * giant listing holding 1280 - Paper's own item serialization rejects any
+ * single stack's count outside 1-99 (discovered the hard way: an earlier
+ * version of this class tried one oversized listing per material and that
+ * limit made every /bm save throw and broke the market plugin-wide). Once
+ * a material already has MIN_STOCK_STACKS listings, further rolls of it
+ * are skipped; as players buy them down, the next restock tops the count
+ * back up. Past, still-unsold listings are never removed or replaced by a
+ * restock; an op can also trigger an extra round early with /bm restock.
  *
  * Deliberately excludes anything creative-only, admin-only, or otherwise
  * not obtainable by a normal survival player - no dragon eggs, spawners,
@@ -49,13 +47,17 @@ public class MarketBotManager {
     public static final String SELLER_NAME = "Black Market Dealer";
 
     /**
-     * Every item the dealer carries is kept stocked up to this many full
-     * stacks (by that material's own max stack size) at minimum - "20
-     * stacks" means 20 * 64 = 1280 for an ordinary stackable item, or just
-     * 20 units for something that can only ever stack to 1 (tools, armor,
-     * swords...).
+     * Every item the dealer carries is kept stocked up to this many
+     * separate full-stack listings at minimum - 20 individual listings of
+     * (say) 64 diamond blocks each, not one listing of 1280. Paper's own
+     * item serialization caps a single stack's count at 99, so a material's
+     * real max stack size (capped again at 99, belt-and-suspenders) is as
+     * big as any one listing can ever get.
      */
     private static final int MIN_STOCK_STACKS = 20;
+
+    /** Hard ceiling matching Paper/Minecraft's own item-stack serialization limit. */
+    private static final int MAX_SERIALIZABLE_STACK = 99;
 
     private static final long REFRESH_INTERVAL_TICKS = 20L * 60L * 10L; // 10 minutes
 
@@ -518,11 +520,10 @@ public class MarketBotManager {
     }
 
     /**
-     * Walks every item in BASE_PRICES and tops up the dealer's listing for
-     * it (creating one if it doesn't have one yet) until it holds at least
-     * MIN_STOCK_STACKS full stacks of that material - never wipes or
-     * replaces what's already listed, and a listing already at or above
-     * that floor (because players haven't bought much of it, say) is left
+     * Walks every item in BASE_PRICES and creates fresh full-stack listings
+     * for it until it has at least MIN_STOCK_STACKS of them - never wipes or
+     * replaces what's already listed, and a material already at or above
+     * that count (because players haven't bought much of it, say) is left
      * untouched rather than piled even higher. Also the handler behind the
      * op-only /bm restock command, so the exact same logic runs whether
      * it's the timer or a person firing it early.
@@ -530,7 +531,7 @@ public class MarketBotManager {
      * @return how many item types received new stock this round
      */
     public int refresh() {
-        Map<Material, Listing> existingByMaterial = consolidateDuplicateListings();
+        Map<Material, List<Listing>> existingByMaterial = groupDealerListings();
 
         int restocked = 0;
         for (Map.Entry<Material, Long> entry : BASE_PRICES.entrySet()) {
@@ -539,32 +540,25 @@ public class MarketBotManager {
 
             try {
                 long unitPrice = entry.getValue();
-                int maxStack = material.getMaxStackSize();
-                // "20 stacks" - 1280 for an ordinary 64-stackable item, just 20
-                // units for something that can only ever stack to 1 (tools, armor).
-                int target = maxStack * MIN_STOCK_STACKS;
-                // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
-                double variance = 0.85 + random.nextDouble() * 0.30;
+                // Capped at 99 too, belt-and-suspenders - every real vanilla max
+                // stack size is 64 or less, but Paper's own item serialization
+                // rejects any stack count outside 1-99 outright, so nothing this
+                // class builds should ever be able to exceed that ceiling.
+                int stackSize = Math.min(material.getMaxStackSize(), MAX_SERIALIZABLE_STACK);
 
-                Listing existing = existingByMaterial.get(material);
-                if (existing != null) {
-                    int currentAmount = existing.item.getAmount();
-                    if (currentAmount >= target) continue; // already deeply stocked, nothing to top up
-
-                    int added = target - currentAmount;
-                    long addedPrice = Math.max(1, Math.round(unitPrice * added * variance));
-
-                    existing.item.setAmount(target);
-                    existing.price += addedPrice;
-                    restocked++;
-                } else {
-                    long price = Math.max(1, Math.round(unitPrice * target * variance));
+                List<Listing> existing = existingByMaterial.computeIfAbsent(material, m -> new ArrayList<>());
+                boolean addedAny = false;
+                while (existing.size() < MIN_STOCK_STACKS) {
+                    // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
+                    double variance = 0.85 + random.nextDouble() * 0.30;
+                    long price = Math.max(1, Math.round(unitPrice * stackSize * variance));
 
                     Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
-                            new ItemStack(material, target), price);
-                    existingByMaterial.put(material, created);
-                    restocked++;
+                            new ItemStack(material, stackSize), price);
+                    existing.add(created);
+                    addedAny = true;
                 }
+                if (addedAny) restocked++;
             } catch (IllegalArgumentException e) {
                 // A handful of Material constants compile fine but have no
                 // real item form (CAVE_VINES was the first one found this way,
@@ -585,67 +579,32 @@ public class MarketBotManager {
     }
 
     /**
-     * Folds any leftover duplicate dealer listings of the same material into
-     * a single listing before this round's rolls run. Mainly a one-time
-     * cleanup for stock that piled up as separate listings under the old
-     * wipe-and-relist behavior (so stacking is visible right away instead
-     * of quietly topping up just one listing buried among old duplicates),
-     * but it's also a standing safety net against anything else ever
-     * producing more than one dealer listing per material. Combined
-     * quantity is capped at the material's max stack size, with the price
-     * scaled down to match whatever had to be left off; the extra listings
-     * are deleted outright via removeListing(), which is safe here only
-     * because the Black Market Dealer isn't a real player with an item to
-     * hand back.
+     * Groups the dealer's current listings by material, one list per
+     * material rather than merging them - under this design a material is
+     * meant to have up to MIN_STOCK_STACKS separate stack-sized listings at
+     * once, not one combined listing. Also a defensive safety net: if any
+     * listing is somehow already sitting above the 1-99 range Paper's item
+     * serialization allows (e.g. leftover state from an earlier buggy build
+     * that tried one oversized listing per material instead of many
+     * stack-sized ones), its amount is clamped back down right here, before
+     * anything gets a chance to call market.save() and throw.
      *
-     * @return one entry per material the dealer currently stocks, pointing
-     *         at its single (now-consolidated) listing
+     * @return every material the dealer currently stocks, mapped to all of
+     *         its current listings
      */
-    private Map<Material, Listing> consolidateDuplicateListings() {
+    private Map<Material, List<Listing>> groupDealerListings() {
         Map<Material, List<Listing>> byMaterial = new HashMap<>();
         for (Listing listing : market.getListingsBy(SELLER_ID)) {
-            byMaterial.computeIfAbsent(listing.item.getType(), m -> new ArrayList<>()).add(listing);
+            Material material = listing.item.getType();
+            int maxSafe = Math.min(material.getMaxStackSize(), MAX_SERIALIZABLE_STACK);
+            if (listing.item.getAmount() > maxSafe) {
+                plugin.getLogger().warning("Clamping oversized Black Market Dealer listing #" + listing.id
+                        + " (" + material + " x" + listing.item.getAmount() + ") down to " + maxSafe
+                        + " - item stacks can't serialize above that.");
+                listing.item.setAmount(maxSafe);
+            }
+            byMaterial.computeIfAbsent(material, m -> new ArrayList<>()).add(listing);
         }
-
-        Map<Material, Listing> result = new HashMap<>();
-        for (Map.Entry<Material, List<Listing>> entry : byMaterial.entrySet()) {
-            Material material = entry.getKey();
-            List<Listing> duplicates = entry.getValue();
-            if (duplicates.size() == 1) {
-                result.put(material, duplicates.get(0));
-                continue;
-            }
-
-            duplicates.sort((a, b) -> Integer.compare(a.id, b.id));
-            Listing keeper = duplicates.get(0);
-
-            long totalAmount = 0;
-            long totalPrice = 0;
-            for (Listing listing : duplicates) {
-                totalAmount += listing.item.getAmount();
-                totalPrice += listing.price;
-            }
-
-            // Cap at the same "20 stacks" ceiling refresh() stocks up to, not a
-            // single real stack - these listings are allowed to hold many stacks
-            // worth of a material at once (see the class javadoc).
-            long cap = (long) material.getMaxStackSize() * MIN_STOCK_STACKS;
-            if (totalAmount > cap) {
-                // Scale the price down to match only the quantity that actually
-                // fits, instead of charging full combined price for a capped stack.
-                totalPrice = Math.max(1, Math.round(totalPrice * (cap / (double) totalAmount)));
-                totalAmount = cap;
-            }
-
-            keeper.item.setAmount((int) totalAmount);
-            keeper.price = totalPrice;
-            for (int i = 1; i < duplicates.size(); i++) {
-                market.removeListing(duplicates.get(i).id);
-            }
-
-            result.put(material, keeper);
-        }
-        return result;
+        return byMaterial;
     }
-
 }
