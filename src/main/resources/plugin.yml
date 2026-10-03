@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.27.2
+version: 1.28.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -165,3 +165,9 @@ commands:
     usage: |
       /daily - claim today's reward (streak resets if you miss a day)
       /daily top - see the longest active daily streaks
+  aura:
+    description: A purely cosmetic particle ring that follows you around. Locked to one specific player.
+    usage: |
+      /aura - toggle the default aura on/off
+      /aura <particle> - turn it on with a specific particle (e.g. end_rod, heart, flame, witch, portal)
+      /aura off - turn it off

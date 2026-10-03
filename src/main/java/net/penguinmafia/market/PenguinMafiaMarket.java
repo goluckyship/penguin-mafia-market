@@ -127,6 +127,12 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("daily").setExecutor(dailyRewardCommand);
         getCommand("daily").setTabCompleter(dailyRewardCommand);
 
+        AuraManager auraManager = AuraManager.start(this);
+        getServer().getPluginManager().registerEvents(auraManager, this);
+        AuraCommand auraCommand = new AuraCommand(auraManager);
+        getCommand("aura").setExecutor(auraCommand);
+        getCommand("aura").setTabCompleter(auraCommand);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 
