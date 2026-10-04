@@ -195,6 +195,10 @@ public final class BuildingBlockShop {
             if (!material.isItem() || material.isLegacy()) continue;
             if (banned.contains(material)) continue;
             if (alreadyInShop.contains(material)) continue;
+            // Spawn eggs are never for sale here, no matter the mob - the
+            // villager egg (already in /shop, handled above) is the only
+            // spawn egg members can buy anywhere on the server.
+            if (material.name().endsWith("_SPAWN_EGG")) continue;
 
             String name = material.name();
             boolean oreLike = name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS")
