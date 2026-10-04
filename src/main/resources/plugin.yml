@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.39.0
+version: 1.40.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -16,8 +16,9 @@ commands:
       /bm balance - check your Frozen Coin balance
       /bm deposit - deposit held Frozen Coin items into your balance
       /bm withdraw <amount> - withdraw balance as physical Frozen Coin items
-      /bm history [player] - recent completed sales (another player's requires op)
-      /bm admin <wipe|refund|setprice> <id> [price] - op-only listing fixes
+      /bm history [player] - recent completed sales (another player's requires penguinmafia.bm.history.others)
+      /bm admin <wipe|refund|setprice> <id> [price] - listing fixes, requires penguinmafia.bm.admin
+      /bm restock - force an extra restock round early, requires penguinmafia.bm.restock
       /bm top - the top 10 highest-earning sellers
     aliases: [blackmarket, market]
   coins:
@@ -26,7 +27,7 @@ commands:
       /coins <amount> - add (or, if negative, remove) coins for yourself
       /coins <player> <amount> - add/remove coins for another player
     permission: penguinmafia.coins
-    permission-message: Only ops can use /coins.
+    permission-message: You don't have permission to use /coins.
   bal:
     description: Check your own or another player's Frozen Coin balance.
     usage: |
@@ -64,8 +65,8 @@ commands:
     usage: |
       /frozenrealm - teleport there
       /frozenrealm back - return to the Overworld
-      /frozenrealm cabin - op-only, teleport straight to the nearest cabin
-      /frozenrealm scramble - op-only, re-rolls where future cabins/bridges spawn (persists across restarts; wipe the dimension's chunk data and restart for a fully fresh scrambled layout)
+      /frozenrealm cabin - requires penguinmafia.frozenrealm.cabin, teleport straight to the nearest cabin
+      /frozenrealm scramble - requires penguinmafia.frozenrealm.scramble, re-rolls where future cabins/bridges spawn (persists across restarts; wipe the dimension's chunk data and restart for a fully fresh scrambled layout)
     aliases: [fr, frozen]
   sandbox:
     description: Op-only - a superflat world for testing/building, separate from the survival world.
@@ -73,6 +74,8 @@ commands:
       /sandbox - teleport there (ops only)
       /sandbox back - return to the Overworld
     aliases: [sb]
+    permission: penguinmafia.sandbox
+    permission-message: You don't have permission to use /sandbox.
   autodeposit:
     description: Toggle automatic depositing of Frozen Coins you pick up straight into your balance.
     usage: |
@@ -88,12 +91,16 @@ commands:
         second (works even while you're disconnected), and holds any other item picked up in
         a mailbox delivered next time you join. Pair with /gen to have something to collect.
       /afk - with no args while one is running, stops your AFK Farm from anywhere
+    permission: penguinmafia.afk
+    permission-message: You don't have permission to use /afk.
   gen:
     description: Op-only - drop a standing item generator that spawns items (including real Frozen Coins) on a timer.
     usage: |
       /gen <item> <delay-secs> <amount> - start a generator at your feet (one per player at a time)
         <item> can be a material id (diamond, iron_ingot, ...) or "coin" for real Frozen Coins
       /gen - with no args, stops your own active generator from anywhere
+    permission: penguinmafia.gen
+    permission-message: You don't have permission to use /gen.
   chat:
     description: Toggle whether Auto-Deposit and AFK Farm print a message every time they credit your balance.
     usage: |
@@ -127,7 +134,7 @@ commands:
       /auction list - see every active auction
       /auction info <id> - details on one auction
       /auction bid <id> <amount> - place a bid (each bid must beat the last by 5%)
-      /auction cancel <id> - cancel your own auction before it has any bids (ops can force-cancel one with a bid)
+      /auction cancel <id> - cancel your own auction before it has any bids (penguinmafia.auction.forcecancel can force-cancel one with a bid)
       /auction history [player] - past completed auctions
     aliases: [ah]
   mod:
@@ -144,7 +151,7 @@ commands:
       /mod unwarn <player> <#> - remove a specific warning by its number
       /mod list - see who's currently frozen, muted, or tempbanned
     permission: penguinmafia.mod
-    permission-message: Only ops can use /mod.
+    permission-message: You don't have permission to use /mod.
     aliases: [staff]
   bounty:
     description: Put Frozen Coins on another player's head, collected automatically by whoever kills them in PvP.
@@ -175,3 +182,47 @@ commands:
       /aura devil - black devil horns plus full red-and-black demonic wings running down to your lower body (no flame particle)
       /aura om - a dark storm cloud hovering over your head
       /aura off - turn it off
+
+# Every staff-only action checks one of these nodes with Bukkit's own
+# hasPermission(), not op status directly - "default: op" means an op has
+# every node below automatically, with nothing to configure, exactly like
+# before. A permissions plugin (LuckPerms, etc.) can grant any individual
+# node here to a non-op rank (a "Mod" group, say) to hand out just that one
+# power without making the whole rank a server op. /bm, /frozenrealm, and
+# /auction mix public and staff-only subcommands under one command, so
+# their staff nodes aren't tied to the command itself in the commands:
+# section above - they're only listed and checked here.
+permissions:
+  penguinmafia.mod:
+    description: Use /mod (freeze, mute, warn, tempban, and their history/list/undo commands).
+    default: op
+  penguinmafia.coins:
+    description: Use /coins to directly add or remove any player's Frozen Coin balance.
+    default: op
+  penguinmafia.sandbox:
+    description: Use /sandbox (teleport to the superflat testing world).
+    default: op
+  penguinmafia.afk:
+    description: Use /afk (start/stop an AFK Farm that collects coins automatically).
+    default: op
+  penguinmafia.gen:
+    description: Use /gen (place a standing item/coin generator).
+    default: op
+  penguinmafia.frozenrealm.scramble:
+    description: Use /frozenrealm scramble (re-roll future Frozen Realm structure locations).
+    default: op
+  penguinmafia.frozenrealm.cabin:
+    description: Use /frozenrealm cabin (teleport straight to the nearest cabin).
+    default: op
+  penguinmafia.bm.restock:
+    description: Use /bm restock to force an extra Black Market Dealer restock round early.
+    default: op
+  penguinmafia.bm.admin:
+    description: Use /bm admin (wipe, refund, or setprice on any listing) and receive the automatic underpriced-listing alerts.
+    default: op
+  penguinmafia.bm.history.others:
+    description: Use /bm history <player> to check someone else's sales history (your own never needs this).
+    default: op
+  penguinmafia.auction.forcecancel:
+    description: Force-cancel another player's auction even after it already has a bid.
+    default: op

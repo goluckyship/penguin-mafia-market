@@ -218,8 +218,8 @@ public class AuctionCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        boolean isOp = player.isOp();
-        AuctionManager.CancelResult result = auctions.cancel(player, id, isOp);
+        boolean canForceCancel = player.hasPermission("penguinmafia.auction.forcecancel");
+        AuctionManager.CancelResult result = auctions.cancel(player, id, canForceCancel);
         switch (result) {
             case OK:
                 player.sendMessage(ChatColor.GRAY + "Auction #" + id + " cancelled - the item has been returned.");

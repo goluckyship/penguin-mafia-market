@@ -31,8 +31,8 @@ public class ModerationCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + "Only ops can use /mod.");
+        if (!sender.hasPermission("penguinmafia.mod")) {
+            sender.sendMessage(ChatColor.RED + "You don't have permission to use /mod.");
             return true;
         }
         if (args.length == 0) {

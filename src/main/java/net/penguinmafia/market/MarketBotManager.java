@@ -655,7 +655,7 @@ public class MarketBotManager {
         }
 
         for (org.bukkit.entity.Player op : org.bukkit.Bukkit.getOnlinePlayers()) {
-            if (!op.isOp()) continue;
+            if (!op.hasPermission("penguinmafia.bm.admin")) continue;
             op.sendMessage(org.bukkit.ChatColor.YELLOW + "[Black Market] " + problems.size()
                     + " listing(s) still look underpriced - see console for the full list ("
                     + "dealer ones get auto-purged next restock; player ones need /bm admin setprice or refund).");

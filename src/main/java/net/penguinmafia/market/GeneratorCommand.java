@@ -34,8 +34,8 @@ public class GeneratorCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         Player player = (Player) sender;
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "Only ops can use /gen.");
+        if (!player.hasPermission("penguinmafia.gen")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use /gen.");
             return true;
         }
 

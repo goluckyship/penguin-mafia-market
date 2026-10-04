@@ -66,8 +66,8 @@ public class SandboxCommand implements CommandExecutor {
             sender.sendMessage("Only players can use the sandbox.");
             return true;
         }
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "Only ops can use /sandbox.");
+        if (!player.hasPermission("penguinmafia.sandbox")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use /sandbox.");
             return true;
         }
 

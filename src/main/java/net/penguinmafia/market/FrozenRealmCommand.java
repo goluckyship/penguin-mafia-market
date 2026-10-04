@@ -50,16 +50,16 @@ public class FrozenRealmCommand implements CommandExecutor {
         }
 
         if (args.length > 0 && args[0].equalsIgnoreCase("scramble")) {
-            if (!player.isOp()) {
-                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm scramble.");
+            if (!player.hasPermission("penguinmafia.frozenrealm.scramble")) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to use /frozenrealm scramble.");
                 return true;
             }
             return scramble(player);
         }
 
         if (args.length > 0 && args[0].equalsIgnoreCase("cabin")) {
-            if (!player.isOp()) {
-                player.sendMessage(ChatColor.RED + "Only ops can use /frozenrealm cabin.");
+            if (!player.hasPermission("penguinmafia.frozenrealm.cabin")) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to use /frozenrealm cabin.");
                 return true;
             }
             return cabin(player, frozenRealm);

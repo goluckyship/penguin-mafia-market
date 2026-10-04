@@ -29,8 +29,8 @@ public class AfkCommand implements CommandExecutor {
             return true;
         }
         Player player = (Player) sender;
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "Only ops can use /afk.");
+        if (!player.hasPermission("penguinmafia.afk")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use /afk.");
             return true;
         }
 

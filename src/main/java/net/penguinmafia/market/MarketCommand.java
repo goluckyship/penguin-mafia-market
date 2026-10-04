@@ -167,8 +167,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
      * existing listing that hasn't sold yet.
      */
     private boolean handleRestock(Player player) {
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "Only ops can force a Black Market restock.");
+        if (!player.hasPermission("penguinmafia.bm.restock")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to force a Black Market restock.");
             return true;
         }
         // refresh() already guards its own internal steps individually, but
@@ -227,8 +227,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
      * the database by hand. All three act on a listing id, same as /bm cancel.
      */
     private boolean handleAdmin(Player player, String[] args) {
-        if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "Only ops can use /bm admin.");
+        if (!player.hasPermission("penguinmafia.bm.admin")) {
+            player.sendMessage(ChatColor.RED + "You don't have permission to use /bm admin.");
             return true;
         }
         if (args.length < 3) {
@@ -305,8 +305,8 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
         java.util.UUID targetId;
         String targetName;
         if (args.length >= 2) {
-            if (!player.isOp()) {
-                player.sendMessage(ChatColor.RED + "Only ops can check another player's history.");
+            if (!player.hasPermission("penguinmafia.bm.history.others")) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to check another player's history.");
                 return true;
             }
             org.bukkit.OfflinePlayer target = org.bukkit.Bukkit.getOfflinePlayer(args[1]);
