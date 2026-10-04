@@ -123,17 +123,21 @@ public class TransactionLedger {
 
     /**
      * Every buyer who bought an item from a given seller whose description
-     * contains `itemNameFragment` (case-insensitive) - used to find exactly
-     * who bought something through a since-fixed pricing bug, rather than
-     * treating every player as a suspect. Only looks back as far as the kept
-     * ledger goes (MAX_ENTRIES most recent sales server-wide), so a purchase
-     * old enough to have scrolled out of the ledger won't show up here.
+     * contains `itemNameFragment` (case-insensitive) BEFORE `beforeMillis` -
+     * used to find exactly who bought something through a since-fixed
+     * pricing bug, rather than treating every player as a suspect, and
+     * without the window sliding forward: a purchase made after the cutoff
+     * (at the corrected, fair price) never counts, no matter when this is
+     * called. Only looks back as far as the kept ledger goes (MAX_ENTRIES
+     * most recent sales server-wide), so a purchase old enough to have
+     * scrolled out of the ledger won't show up here.
      */
-    public java.util.Set<UUID> getBuyersOf(UUID sellerId, String itemNameFragment) {
+    public java.util.Set<UUID> getBuyersOf(UUID sellerId, String itemNameFragment, long beforeMillis) {
         java.util.Set<UUID> buyers = new java.util.HashSet<>();
         String needle = itemNameFragment.toLowerCase();
         for (Sale sale : sales) {
-            if (sale.sellerId.equals(sellerId) && sale.itemDescription.toLowerCase().contains(needle)) {
+            if (sale.sellerId.equals(sellerId) && sale.timestampMillis < beforeMillis
+                    && sale.itemDescription.toLowerCase().contains(needle)) {
                 buyers.add(sale.buyerId);
             }
         }

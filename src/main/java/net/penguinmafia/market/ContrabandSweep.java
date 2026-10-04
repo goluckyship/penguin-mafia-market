@@ -24,10 +24,15 @@ import java.util.UUID;
  * coins, before it was caught and repriced to a fair ~1.35 million.
  *
  * This only confiscates Heavy Core/Mace from players the TransactionLedger
- * actually shows bought Heavy Core from the Black Market Dealer at that
- * bugged price - never from a player who got one legitimately (a real
- * Trial Chamber vault drop, or a fairly-priced purchase after this fix).
- * Tracked in contraband_sweep.yml so it only ever runs once per player.
+ * actually shows bought Heavy Core from the Black Market Dealer BEFORE the
+ * fix's cutoff timestamp - never from a player who got one legitimately (a
+ * real Trial Chamber vault drop, or a purchase after this fix at the new
+ * fair price). That cutoff is recorded once, the first time this class ever
+ * runs, and reused on every later restart - it does NOT slide forward - so
+ * a player who buys a Heavy Core next week at the corrected price is never
+ * retroactively flagged just because the ledger now contains their
+ * purchase too. Tracked in contraband_sweep.yml, which also records which
+ * players have already been swept, so it only ever runs once per player.
  *
  * Caveat: the ledger only keeps its most recent entries server-wide, so a
  * glitched purchase old enough to have scrolled out of it won't be caught
@@ -45,11 +50,21 @@ public class ContrabandSweep implements Listener {
 
     public ContrabandSweep(PenguinMafiaMarket plugin, TransactionLedger ledger) {
         this.plugin = plugin;
-        this.flaggedBuyers = ledger.getBuyersOf(MarketBotManager.SELLER_ID, "heavy core");
         this.file = new File(plugin.getDataFolder(), "contraband_sweep.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
+
+        long cutoff = config.getLong("_cutoff_millis", -1L);
+        if (cutoff <= 0) {
+            // First time this fix has ever run - everything bought up to
+            // right now is suspect, nothing bought after ever will be.
+            cutoff = System.currentTimeMillis();
+            config.set("_cutoff_millis", cutoff);
+            save();
+        }
+
+        this.flaggedBuyers = ledger.getBuyersOf(MarketBotManager.SELLER_ID, "heavy core", cutoff);
         plugin.getLogger().info("Contraband sweep: " + flaggedBuyers.size()
-                + " player(s) on record as having bought Heavy Core from the Black Market Dealer.");
+                + " player(s) on record as having bought Heavy Core from the Black Market Dealer before the fix.");
     }
 
     /** Runs once at startup for anyone already online when this fix is deployed. */

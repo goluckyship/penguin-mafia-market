@@ -634,6 +634,7 @@ public class MarketBotManager {
      */
     public int refresh() {
         purgeSpawnEggListings();
+        purgeUnderpricedHeavyCoreListings();
 
         double inflationMultiplier = computeInflationMultiplier();
         Map<Material, List<Listing>> existingByMaterial = groupDealerListings();
@@ -739,6 +740,35 @@ public class MarketBotManager {
         if (removed > 0) {
             plugin.getLogger().info("Black Market Dealer: removed " + removed
                     + " spawn egg listing(s) - no spawn egg belongs on /bm.");
+        }
+    }
+
+    /**
+     * One-time-in-effect, safe-to-rerun-forever cleanup: deletes any
+     * dealer-owned Heavy Core or Mace listing still sitting at (or near) the
+     * old 15-coin bugged price, so it can't keep being bought cheap after
+     * this fix ships - the normal restock loop right after this immediately
+     * replaces it at the real price. A listing already at a fair price is
+     * left alone, so once the stale ones are gone this never finds anything
+     * to do again.
+     */
+    private void purgeUnderpricedHeavyCoreListings() {
+        int removed = 0;
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            Material type = listing.item.getType();
+            Long fairUnitPrice = type == Material.HEAVY_CORE ? 1_350_000L
+                    : type == Material.MACE ? 1_500_000L : null;
+            if (fairUnitPrice == null) continue;
+
+            long perItem = listing.price / Math.max(1, listing.item.getAmount());
+            if (perItem < fairUnitPrice / 2) { // well below fair - a leftover from the pricing bug
+                market.removeListing(listing.id);
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Black Market Dealer: removed " + removed
+                    + " underpriced Heavy Core/Mace listing(s) left over from the pricing bug.");
         }
     }
 
