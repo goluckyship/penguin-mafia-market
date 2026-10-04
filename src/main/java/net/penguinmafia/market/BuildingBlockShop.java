@@ -141,6 +141,10 @@ public final class BuildingBlockShop {
                 Material.PACKED_ICE, Material.BLUE_ICE, Material.SNOW_BLOCK, Material.CLAY,
                 Material.HAY_BLOCK, Material.BONE_BLOCK, Material.MUD, Material.PACKED_MUD,
                 Material.MOSS_BLOCK, Material.COPPER_BLOCK, Material.CUT_COPPER);
+
+        // Not a building block - a one-off expensive special sold per-item
+        // rather than per-stack (see ShopGUI.CUSTOM_UNIT_PRICE).
+        add("Special", Material.VILLAGER_SPAWN_EGG);
     }
 
     private BuildingBlockShop() {

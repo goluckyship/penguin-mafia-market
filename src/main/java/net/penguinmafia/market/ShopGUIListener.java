@@ -67,7 +67,7 @@ public class ShopGUIListener implements Listener {
         if (event.isRightClick()) {
             shopGUI.openQuantityMenu(player, material, holder.page);
         } else if (event.isLeftClick()) {
-            shopGUI.purchase(player, material, ShopGUI.STACK_SIZE);
+            shopGUI.purchase(player, material, ShopGUI.leftClickAmount(material));
             shopGUI.openCatalog(player, holder.page); // refresh so the balance line updates
         }
     }

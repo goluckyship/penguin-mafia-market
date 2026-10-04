@@ -12,6 +12,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The /shop GUI: a paged catalog of every block BuildingBlockShop sells.
@@ -28,6 +29,17 @@ public class ShopGUI {
     static final int ITEMS_PER_PAGE = 45; // bottom row reserved for navigation
     static final long PRICE_PER_STACK = 1000L;
     static final int STACK_SIZE = 64;
+
+    /**
+     * A handful of items priced per-item instead of per-stack-of-64 - the
+     * ordinary building blocks are cheap and bulk-priced, but something like
+     * a villager spawn egg is a one-off expensive special, so it gets a flat
+     * price for each one rather than ~15.6 coins/egg falling out of the
+     * normal per-stack math.
+     */
+    static final Map<Material, Long> CUSTOM_UNIT_PRICE = Map.of(
+            Material.VILLAGER_SPAWN_EGG, 250_000L
+    );
 
     private static final int PREV_SLOT = 45;
     private static final int CLOSE_SLOT = 48;
@@ -122,17 +134,36 @@ public class ShopGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + displayName(material));
+        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
+        String priceLine = unitPrice != null
+                ? ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(unitPrice)
+                        + ChatColor.GRAY + " each"
+                : ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(PRICE_PER_STACK)
+                        + ChatColor.GRAY + " per stack of " + STACK_SIZE;
         meta.setLore(Arrays.asList(
-                ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(PRICE_PER_STACK)
-                        + ChatColor.GRAY + " per stack of " + STACK_SIZE,
+                priceLine,
                 "",
-                ChatColor.YELLOW + "Left-click " + ChatColor.GRAY + "to buy a stack",
+                ChatColor.YELLOW + "Left-click " + ChatColor.GRAY + (unitPrice != null ? "to buy one" : "to buy a stack"),
                 ChatColor.YELLOW + "Right-click " + ChatColor.GRAY + "for more quantities",
                 "",
                 ChatColor.GRAY + "Your balance: " + ChatColor.AQUA + CoinFormat.formatWithExact(economy.getBalance(player))
         ));
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** How much a plain left-click in the catalog buys - a full stack normally, but just 1 for a custom-priced special. */
+    public static long leftClickAmount(Material material) {
+        return CUSTOM_UNIT_PRICE.containsKey(material) ? 1 : STACK_SIZE;
+    }
+
+    /** Cost for `amount` of material - custom per-item price if one's set, otherwise the normal per-stack-of-64 rate. */
+    private long costFor(Material material, long amount) {
+        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
+        if (unitPrice != null) {
+            return amount * unitPrice;
+        }
+        return (long) Math.ceil(amount / (double) STACK_SIZE) * PRICE_PER_STACK;
     }
 
     public void openQuantityMenu(Player player, Material material, int originPage) {
@@ -143,17 +174,22 @@ public class ShopGUI {
         ItemStack filler = namedItem(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int i = 0; i < 27; i++) inv.setItem(i, filler);
 
-        long[] stackCounts = {1, 5, 10, 32, 64};
+        boolean customPriced = CUSTOM_UNIT_PRICE.containsKey(material);
+        // A custom-priced special (e.g. a 250,000-coin spawn egg) offers
+        // plain item counts here, not multiples of a 64-stack - nobody's
+        // buying 64 of those in one click by accident.
+        long[] amounts = customPriced ? new long[]{1, 2, 4, 8, 16} : new long[]{64, 5 * 64L, 10 * 64L, 32 * 64L, 64 * 64L};
         int[] slots = {10, 11, 12, 13, 14};
-        for (int i = 0; i < stackCounts.length; i++) {
-            long stacks = stackCounts[i];
-            long amount = stacks * STACK_SIZE;
-            long cost = stacks * PRICE_PER_STACK;
+        for (int i = 0; i < amounts.length; i++) {
+            long amount = amounts[i];
+            long cost = costFor(material, amount);
 
-            ItemStack item = new ItemStack(material, STACK_SIZE);
+            ItemStack item = new ItemStack(material, (int) Math.min(amount, material.getMaxStackSize()));
             ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + stacks + " stack" + (stacks == 1 ? "" : "s")
-                    + ChatColor.GRAY + " (" + amount + ")");
+            String label = customPriced
+                    ? amount + "x " + displayName(material)
+                    : (amount / STACK_SIZE) + " stack" + (amount == STACK_SIZE ? "" : "s") + ChatColor.GRAY + " (" + amount + ")";
+            meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + label);
             meta.setLore(Arrays.asList(
                     ChatColor.GRAY + "Cost: " + ChatColor.WHITE + CoinFormat.formatWithExact(cost),
                     "",
@@ -199,14 +235,19 @@ public class ShopGUI {
 
         long balance = economy.getBalance(player);
         boolean maxMode = requested <= 0;
+        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
         long toBuy;
 
         if (maxMode) {
-            long affordableItems = (balance / PRICE_PER_STACK) * STACK_SIZE;
+            long affordableItems = unitPrice != null
+                    ? balance / unitPrice
+                    : (balance / PRICE_PER_STACK) * STACK_SIZE;
             toBuy = Math.min(affordableItems, capacity);
             if (toBuy <= 0) {
-                player.sendMessage(ChatColor.RED + "You can't afford even one stack of " + displayName(material)
-                        + " (" + CoinFormat.formatWithExact(PRICE_PER_STACK) + " coins) - balance: "
+                long minCost = unitPrice != null ? unitPrice : PRICE_PER_STACK;
+                player.sendMessage(ChatColor.RED + "You can't afford even one "
+                        + (unitPrice != null ? displayName(material) : "stack of " + displayName(material))
+                        + " (" + CoinFormat.formatWithExact(minCost) + " coins) - balance: "
                         + CoinFormat.formatWithExact(balance) + ".");
                 return;
             }
@@ -214,7 +255,7 @@ public class ShopGUI {
             toBuy = Math.min(requested, capacity);
         }
 
-        long cost = (long) Math.ceil(toBuy / (double) STACK_SIZE) * PRICE_PER_STACK;
+        long cost = costFor(material, toBuy);
 
         if (!maxMode && balance < cost) {
             player.sendMessage(ChatColor.RED + "That's " + CoinFormat.formatWithExact(cost) + " Frozen Coins"
