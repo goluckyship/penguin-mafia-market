@@ -164,6 +164,19 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
                     + "Restocked the dealer - added stock to " + ChatColor.AQUA + restocked + ChatColor.GRAY
                     + " item type(s).");
+
+            // Report, by exact Material name, anything still priced wrong
+            // right now - so a bad price can be diagnosed from what's
+            // printed in chat instead of a screenshot of a GUI tooltip that
+            // can't be matched back to a specific pricing rule on sight.
+            List<String> problems = marketBotManager.auditUnderpricedListings();
+            if (!problems.isEmpty()) {
+                player.sendMessage(ChatColor.YELLOW + "[Black Market] " + problems.size()
+                        + " listing(s) still look underpriced after this restock:");
+                for (String problem : problems) {
+                    player.sendMessage(ChatColor.GRAY + " - " + problem);
+                }
+            }
         } catch (Throwable t) {
             // Throwable, not just Exception - a restock this size (every
             // non-banned material in the game, up to MIN_STOCK_STACKS

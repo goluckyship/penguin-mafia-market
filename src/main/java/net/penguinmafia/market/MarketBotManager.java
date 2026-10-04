@@ -813,6 +813,60 @@ public class MarketBotManager {
         }
     }
 
+    /**
+     * Re-runs the exact same "is this well below fair" check
+     * purgeStaleUnderpricedListings() uses, but reports instead of removing -
+     * called right after a restock so whoever triggered it can see in chat,
+     * by exact Material name, listing id and price, anything still priced
+     * wrong RIGHT NOW. Exists because "a price still looks wrong in the GUI"
+     * isn't enough to debug from - the GUI only shows a human-readable item
+     * name (which can't be matched back to a specific Material/BASE_PRICES
+     * entry on sight, especially for an item whose display name doesn't
+     * obviously match its enum constant), while this reports the ground
+     * truth the pricing code actually keyed off of.
+     */
+    public List<String> auditUnderpricedListings() {
+        List<String> problems = new ArrayList<>();
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            Material type = listing.item.getType();
+            if (type == Material.ENCHANTED_BOOK) continue; // priced per-preset, checked separately below
+
+            Long fairUnitPrice = BASE_PRICES.get(type);
+            int amount = Math.max(1, listing.item.getAmount());
+
+            if (fairUnitPrice == null) {
+                // Not in BASE_PRICES at all - this class never created it
+                // (or priced it) in the first place, so it's not this
+                // dealer's restock logic that's wrong; still worth
+                // surfacing, since it's sitting under the dealer's name.
+                problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
+                        + " - NOT in BASE_PRICES at all (this class never priced this material)");
+                continue;
+            }
+
+            long fairStackPrice = fairUnitPrice * amount;
+            long floor = Math.round(fairStackPrice * 0.3);
+            if (listing.price < floor) {
+                problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
+                        + " (base unit price " + fairUnitPrice + ", fair stack price ~" + fairStackPrice + ")");
+            }
+        }
+
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            if (listing.item.getType() != Material.ENCHANTED_BOOK) continue;
+            if (!(listing.item.getItemMeta() instanceof EnchantmentStorageMeta meta)) {
+                problems.add("#" + listing.id + " ENCHANTED_BOOK priced " + listing.price
+                        + " - item meta isn't EnchantmentStorageMeta");
+                continue;
+            }
+            if (meta.getStoredEnchants().isEmpty()) {
+                problems.add("#" + listing.id + " ENCHANTED_BOOK priced " + listing.price
+                        + " - blank, no enchantment stored");
+            }
+        }
+        return problems;
+    }
+
     // ================================================================
     // Enchanted books - sold with a real, fixed enchantment on them
     // instead of a blank, useless "Enchanted Book" that used to fall into
