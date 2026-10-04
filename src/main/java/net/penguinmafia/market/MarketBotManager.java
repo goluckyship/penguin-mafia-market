@@ -501,6 +501,18 @@ public class MarketBotManager {
         put(Material.BOOK, 20); put(Material.WRITABLE_BOOK, 10); put(Material.PAPER, 3);
         put(Material.GLASS_BOTTLE, 2); put(Material.BUNDLE, 100); put(Material.RECOVERY_COMPASS, 650);
         put(Material.BRUSH, 60);
+
+        // --- Armor trim smithing templates ---
+        // Pulled from BuildingBlockShop's own list (itself scanned off
+        // Material.values(), not hand-typed) rather than naming every
+        // *_SMITHING_TEMPLATE constant here by hand - avoids a typo'd enum
+        // constant breaking the build and automatically covers any new
+        // trim a future game version adds. The netherite upgrade template
+        // is priced steeper since it's the one that actually matters for
+        // gearing up, not just cosmetics.
+        for (Material trim : BuildingBlockShop.ARMOR_TRIMS) {
+            put(trim, trim.name().equals("NETHERITE_UPGRADE_SMITHING_TEMPLATE") ? 2500 : 350);
+        }
     }
 
     private static void put(Material material, long price) {

@@ -51,6 +51,15 @@ public final class BuildingBlockShop {
      */
     public static final Set<Material> EXPANDED_CATALOG = new HashSet<>();
 
+    /**
+     * Just the armor trim smithing templates out of EXPANDED_CATALOG, found
+     * by scanning Material.values() rather than hand-typed (so there's no
+     * risk of a typo'd enum constant breaking the build) - exposed so other
+     * systems (the Black Market Dealer's restock list, for one) can sell
+     * them too without re-deriving the same list themselves.
+     */
+    public static final List<Material> ARMOR_TRIMS = new ArrayList<>();
+
     private static void add(String categoryName, Material... blocks) {
         CATEGORIES.add(new Category(categoryName, blocks));
         for (Material material : blocks) {
@@ -222,6 +231,7 @@ public final class BuildingBlockShop {
         EXPANDED_CATALOG.addAll(ores);
         EXPANDED_CATALOG.addAll(trims);
         EXPANDED_CATALOG.addAll(everythingElse);
+        ARMOR_TRIMS.addAll(trims);
     }
 
     private BuildingBlockShop() {
