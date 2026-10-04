@@ -633,10 +633,29 @@ public class MarketBotManager {
      * @return how many item types received new stock this round
      */
     public int refresh() {
-        purgeSpawnEggListings();
-        purgeUnderpricedHeavyCoreListings();
+        try {
+            purgeSpawnEggListings();
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Black Market Dealer: spawn egg purge failed, skipping it this round.", e);
+        }
 
-        double inflationMultiplier = computeInflationMultiplier();
+        try {
+            purgeStaleUnderpricedListings();
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Black Market Dealer: stale-listing purge failed, skipping it this round.", e);
+        }
+
+        double inflationMultiplier;
+        try {
+            inflationMultiplier = computeInflationMultiplier();
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Black Market Dealer: inflation multiplier calculation failed, defaulting to 1.0x.", e);
+            inflationMultiplier = 1.0;
+        }
+
         Map<Material, List<Listing>> existingByMaterial = groupDealerListings();
 
         int restocked = 0;
@@ -665,20 +684,28 @@ public class MarketBotManager {
                     addedAny = true;
                 }
                 if (addedAny) restocked++;
-            } catch (IllegalArgumentException e) {
+            } catch (Exception e) {
                 // A handful of Material constants compile fine but have no
                 // real item form (CAVE_VINES was the first one found this way,
                 // the hard way, via a server log) - new ItemStack(material, n)
-                // throws for those. Rather than letting one bad material take
-                // down the whole restock task (and every item type after it
-                // in this pass) until someone notices and redeploys, skip just
-                // this one and keep going.
-                plugin.getLogger().warning("Black Market Dealer couldn't stock " + material
-                        + " - it has no item form (" + e.getMessage() + "). Skipping.");
+                // throws for those (IllegalArgumentException normally, but
+                // caught broadly here since a future game version could throw
+                // something else for the same underlying reason). Rather than
+                // letting one bad material take down the whole restock task
+                // (and every item type after it in this pass, and the /bm
+                // restock command itself) until someone notices and
+                // redeploys, skip just this one and keep going.
+                plugin.getLogger().log(java.util.logging.Level.WARNING,
+                        "Black Market Dealer couldn't stock " + material + " - skipping it.", e);
             }
         }
 
-        restockEnchantedBooks(inflationMultiplier);
+        try {
+            restockEnchantedBooks(inflationMultiplier);
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Black Market Dealer: enchanted book restock failed, skipping it this round.", e);
+        }
 
         market.save();
         plugin.getLogger().info("Black Market Dealer added stock to " + restocked
@@ -745,30 +772,44 @@ public class MarketBotManager {
 
     /**
      * One-time-in-effect, safe-to-rerun-forever cleanup: deletes any
-     * dealer-owned Heavy Core or Mace listing still sitting at (or near) the
-     * old 15-coin bugged price, so it can't keep being bought cheap after
-     * this fix ships - the normal restock loop right after this immediately
-     * replaces it at the real price. A listing already at a fair price is
-     * left alone, so once the stale ones are gone this never finds anything
-     * to do again.
+     * dealer-owned listing still sitting at (or near) a long-stale price for
+     * its material - most importantly, the flat 15-coin "everything not
+     * banned" catch-all price every ore, trim, valuable block, hoe/shovel
+     * tier, and Heavy Core/Mace briefly got stocked at before this repricing
+     * pass gave each of those a real, fair BASE_PRICES entry. Excluding
+     * spawn eggs (purgeSpawnEggListings already strips those) and Enchanted
+     * Books (priced per-preset, not from BASE_PRICES - restockEnchantedBooks
+     * handles those directly), this compares every dealer listing's actual
+     * per-item price against that material's current fair unit price and
+     * removes anything well below what even the lowest legitimate roll could
+     * produce (stack * unit * 0.85 variance * 0.5x inflation floor = 0.425x
+     * fair - 0.3x gives real headroom below that without being so low it'd
+     * ever let a genuine old bugged listing slip through). The normal
+     * restock loop right after this immediately replaces whatever it
+     * removes at the real price, so once every stale listing is gone this is
+     * just an empty scan on every later restock.
      */
-    private void purgeUnderpricedHeavyCoreListings() {
+    private void purgeStaleUnderpricedListings() {
         int removed = 0;
         for (Listing listing : market.getListingsBy(SELLER_ID)) {
             Material type = listing.item.getType();
-            Long fairUnitPrice = type == Material.HEAVY_CORE ? 1_350_000L
-                    : type == Material.MACE ? 1_500_000L : null;
-            if (fairUnitPrice == null) continue;
+            if (type == Material.ENCHANTED_BOOK) continue; // priced per-preset, not from BASE_PRICES
 
-            long perItem = listing.price / Math.max(1, listing.item.getAmount());
-            if (perItem < fairUnitPrice / 2) { // well below fair - a leftover from the pricing bug
+            Long fairUnitPrice = BASE_PRICES.get(type);
+            if (fairUnitPrice == null) continue; // not something this class prices - leave it alone
+
+            int amount = Math.max(1, listing.item.getAmount());
+            long fairStackPrice = fairUnitPrice * amount;
+            long perStackFloor = Math.round(fairStackPrice * 0.3);
+
+            if (listing.price < perStackFloor) { // well below fair - a leftover from a since-fixed price
                 market.removeListing(listing.id);
                 removed++;
             }
         }
         if (removed > 0) {
             plugin.getLogger().info("Black Market Dealer: removed " + removed
-                    + " underpriced Heavy Core/Mace listing(s) left over from the pricing bug.");
+                    + " stale underpriced listing(s) left over from before the last repricing pass.");
         }
     }
 
@@ -839,17 +880,34 @@ public class MarketBotManager {
 
         int restocked = 0;
         for (EnchantPreset preset : ENCHANT_PRESETS) {
-            boolean inStock = existingBooks.stream().anyMatch(listing -> matchesPreset(listing.item, preset));
-            if (inStock) continue;
+            try {
+                boolean inStock = existingBooks.stream().anyMatch(listing -> matchesPreset(listing.item, preset));
+                if (inStock) continue;
 
-            ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
-            EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
-            meta.addStoredEnchant(preset.enchantment(), preset.level(), true);
-            book.setItemMeta(meta);
+                if (preset.enchantment() == null) {
+                    // Defensive: a static Enchantment field resolving to null
+                    // (e.g. a brand-new enchantment constant not yet backed
+                    // by the server's registry) would otherwise NPE inside
+                    // addStoredEnchant and, uncaught, take out every preset
+                    // after it in the list along with the /bm restock command.
+                    plugin.getLogger().warning("Black Market Dealer: an enchanted book preset has a null "
+                            + "Enchantment (level " + preset.level() + ", price " + preset.price()
+                            + ") - skipping it.");
+                    continue;
+                }
 
-            long price = Math.max(1, Math.round(preset.price() * inflationMultiplier));
-            market.createSystemListing(SELLER_ID, SELLER_NAME, book, price);
-            restocked++;
+                ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+                EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+                meta.addStoredEnchant(preset.enchantment(), preset.level(), true);
+                book.setItemMeta(meta);
+
+                long price = Math.max(1, Math.round(preset.price() * inflationMultiplier));
+                market.createSystemListing(SELLER_ID, SELLER_NAME, book, price);
+                restocked++;
+            } catch (Exception e) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING,
+                        "Black Market Dealer couldn't stock an enchanted book preset (" + preset + ") - skipping it.", e);
+            }
         }
         if (restocked > 0) {
             plugin.getLogger().info("Black Market Dealer restocked " + restocked + " enchanted book listing(s).");

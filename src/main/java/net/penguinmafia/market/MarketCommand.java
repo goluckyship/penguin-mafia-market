@@ -150,10 +150,30 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.RED + "Only ops can force a Black Market restock.");
             return true;
         }
-        int restocked = marketBotManager.refresh();
-        player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
-                + "Restocked the dealer - added stock to " + ChatColor.AQUA + restocked + ChatColor.GRAY
-                + " item type(s).");
+        // refresh() already guards its own internal steps individually, but
+        // this catch-all is the last line of defense: without it, anything
+        // that still slipped through would propagate all the way out of
+        // onCommand() and Bukkit would swallow it as its own generic
+        // "An unexpected error occurred trying to execute that command"
+        // message - which tells nobody, including whoever's looking at the
+        // console, anything about what actually broke. Logging the real
+        // exception here means the next failure (if any) is diagnosable
+        // instead of a dead end.
+        try {
+            int restocked = marketBotManager.refresh();
+            player.sendMessage(ChatColor.LIGHT_PURPLE + "[Black Market] " + ChatColor.GRAY
+                    + "Restocked the dealer - added stock to " + ChatColor.AQUA + restocked + ChatColor.GRAY
+                    + " item type(s).");
+        } catch (Throwable t) {
+            // Throwable, not just Exception - a restock this size (every
+            // non-banned material in the game, up to MIN_STOCK_STACKS
+            // listings each) is heavy enough that even something like a
+            // StackOverflowError during YAML serialization shouldn't be
+            // able to slip past this and come out as Bukkit's own opaque
+            // "unexpected error" message with nothing useful in the log.
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Black Market Dealer restock failed.", t);
+            player.sendMessage(ChatColor.RED + "[Black Market] Restock failed - see the server console for details.");
+        }
         return true;
     }
 
