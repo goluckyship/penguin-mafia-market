@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.33.0
+version: 1.34.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -99,13 +99,10 @@ commands:
     usage: |
       /chat - turn balance-update chat messages on or off (check /bal instead when they're off)
   shop:
-    description: Open the Shop GUI to spend your Frozen Coin balance - building/decoration blocks plus ores, armor trims, wind charges, and just about everything else that isn't banned.
+    description: Open the Shop GUI to spend your Frozen Coin balance on building and decoration blocks (not ores, netherite, or anything rare - see /bm for that).
     usage: |
       /shop - opens a paged catalog GUI. Hover an item to see its price,
-      left-click to buy a stack (or one, for pricier per-item specials),
-      right-click for more quantity options. Covers plain building and
-      decoration blocks, ores and their storage blocks, armor trim smithing
-      templates, wind charges, and most other obtainable items.
+      left-click to buy a stack, right-click for more quantity options.
   baltop:
     description: See the top 10 Frozen Coin balances on the server.
     usage: /baltop - top 10 balances

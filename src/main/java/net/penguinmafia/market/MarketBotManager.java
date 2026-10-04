@@ -511,7 +511,50 @@ public class MarketBotManager {
         // is priced steeper since it's the one that actually matters for
         // gearing up, not just cosmetics.
         for (Material trim : BuildingBlockShop.ARMOR_TRIMS) {
-            put(trim, trim.name().equals("NETHERITE_UPGRADE_SMITHING_TEMPLATE") ? 2500 : 350);
+            if (!BASE_PRICES.containsKey(trim)) {
+                put(trim, trim.name().equals("NETHERITE_UPGRADE_SMITHING_TEMPLATE") ? 2500 : 350);
+            }
+        }
+
+        // --- Ores & valuable storage blocks - "not just cobbled etc" ---
+        // Also pulled from BuildingBlockShop's scanned list rather than
+        // hand-typed. Priced by tier rather than per-block: an ore block
+        // (mine it, get ~1 of the raw resource) is priced like one unit of
+        // that resource; a storage/raw block (9 items compacted into one
+        // block, same as the crafting recipe) is priced at roughly 9x that.
+        Map<String, Long> oreTierUnitPrice = new LinkedHashMap<>();
+        oreTierUnitPrice.put("NETHERITE", 5500L);
+        oreTierUnitPrice.put("DIAMOND", 350L);
+        oreTierUnitPrice.put("EMERALD", 220L);
+        oreTierUnitPrice.put("GOLD", 60L);
+        oreTierUnitPrice.put("AMETHYST", 35L);
+        oreTierUnitPrice.put("IRON", 30L);
+        oreTierUnitPrice.put("QUARTZ", 16L);
+        oreTierUnitPrice.put("COAL", 18L);
+        oreTierUnitPrice.put("COPPER", 14L);
+        oreTierUnitPrice.put("REDSTONE", 10L);
+        oreTierUnitPrice.put("LAPIS", 10L);
+        for (Material ore : BuildingBlockShop.ORES_AND_VALUABLES) {
+            if (BASE_PRICES.containsKey(ore)) continue;
+            String name = ore.name();
+            long unit = 20L; // fallback for anything that doesn't match a known tier
+            for (Map.Entry<String, Long> tier : oreTierUnitPrice.entrySet()) {
+                if (name.contains(tier.getKey())) { unit = tier.getValue(); break; }
+            }
+            boolean storageOrRawBlock = name.endsWith("_BLOCK");
+            put(ore, storageOrRawBlock ? unit * 9 : unit);
+        }
+
+        // --- Everything else not banned and not already priced above ---
+        // The long catch-all tail (tools, weapons, armor, food, potions,
+        // wind charges, and anything else BASE_PRICES didn't already get a
+        // hand-tuned entry for) gets a modest default so it's purchasable
+        // without undercutting the hand-tuned prices above (which still win,
+        // since put() here only adds materials with no existing entry).
+        for (Material material : BuildingBlockShop.EVERYTHING_ELSE) {
+            if (!BASE_PRICES.containsKey(material)) {
+                put(material, 15L);
+            }
         }
     }
 

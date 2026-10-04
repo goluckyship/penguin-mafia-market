@@ -11,7 +11,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,33 +31,15 @@ public class ShopGUI {
     static final int STACK_SIZE = 64;
 
     /**
-     * Items priced per-item instead of per-stack-of-64 - the ordinary
-     * building blocks are cheap and bulk-priced, but a villager spawn egg,
-     * an ore, a netherite ingot, or a totem of undying falling out of the
-     * normal "1,000 coins per stack of 64" math would be absurdly cheap (or,
-     * for a one-off special, zero, since it isn't stackable at all). For
-     * everything the "sell everything not banned" expansion added
-     * (BuildingBlockShop.EXPANDED_CATALOG), this reuses the same hand-tuned
-     * per-item prices the Black Market Dealer charges (MarketBotManager's
-     * BASE_PRICES) so the two shops don't disagree on what something's
-     * worth; anything in that expansion with no hand-tuned price (odd items
-     * BASE_PRICES never got around to) just falls back to the flat
-     * per-stack rate like the original building blocks.
+     * A handful of items priced per-item instead of per-stack-of-64 - the
+     * ordinary building blocks are cheap and bulk-priced, but something like
+     * a villager spawn egg is a one-off expensive special, so it gets a flat
+     * price for each one rather than ~15.6 coins/egg falling out of the
+     * normal per-stack math.
      */
-    static final Map<Material, Long> CUSTOM_UNIT_PRICE = buildCustomUnitPrices();
-
-    private static Map<Material, Long> buildCustomUnitPrices() {
-        Map<Material, Long> prices = new HashMap<>();
-        prices.put(Material.VILLAGER_SPAWN_EGG, 250_000L);
-        Map<Material, Long> basePrices = MarketBotManager.getBasePrices();
-        for (Material material : BuildingBlockShop.EXPANDED_CATALOG) {
-            Long price = basePrices.get(material);
-            if (price != null) {
-                prices.put(material, price);
-            }
-        }
-        return prices;
-    }
+    static final Map<Material, Long> CUSTOM_UNIT_PRICE = Map.of(
+            Material.VILLAGER_SPAWN_EGG, 250_000L
+    );
 
     private static final int PREV_SLOT = 45;
     private static final int CLOSE_SLOT = 48;
