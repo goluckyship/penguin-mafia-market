@@ -199,6 +199,11 @@ public final class BuildingBlockShop {
             // villager egg (already in /shop, handled above) is the only
             // spawn egg members can buy anywhere on the server.
             if (material.name().endsWith("_SPAWN_EGG")) continue;
+            // A blank Enchanted Book (no enchantment at all) isn't worth
+            // selling - MarketBotManager stocks real pre-enchanted copies
+            // instead (see its ENCHANT_PRESETS), so skip the plain material
+            // here rather than letting it fall into EVERYTHING_ELSE.
+            if (material == Material.ENCHANTED_BOOK) continue;
 
             String name = material.name();
             boolean oreLike = name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS")

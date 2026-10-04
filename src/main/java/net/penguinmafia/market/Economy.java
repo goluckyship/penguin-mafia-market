@@ -70,6 +70,41 @@ public class Economy {
      * simply skipping any root key that isn't a valid UUID safely excludes
      * those without needing to know their names here.
      */
+    /**
+     * Sum of every player's Frozen Coin balance right now - the total money
+     * supply in circulation. Used by MarketBotManager to scale the Black
+     * Market Dealer's prices with the server's economy instead of leaving
+     * them as fixed numbers forever (see getInflationBaseline()).
+     */
+    public long getTotalCirculatingCoins() {
+        long total = 0L;
+        for (String key : config.getKeys(false)) {
+            try {
+                java.util.UUID.fromString(key);
+            } catch (IllegalArgumentException e) {
+                continue; // not a player balance key (e.g. the inflation baseline, autodeposit, quietchat)
+            }
+            total += config.getLong(key, 0L);
+        }
+        return total;
+    }
+
+    /**
+     * The total circulating coins recorded the first time inflation tracking
+     * ran, used as the "1.0x" reference point - -1 if it's never been set.
+     * Stored under a non-UUID key, so getTotalCirculatingCoins() and
+     * getTopBalances() (which both skip non-UUID keys) never mistake it for
+     * a player's balance.
+     */
+    public long getInflationBaseline() {
+        return config.getLong("_inflation_baseline", -1L);
+    }
+
+    public void setInflationBaseline(long value) {
+        config.set("_inflation_baseline", value);
+        save();
+    }
+
     public java.util.List<java.util.Map.Entry<java.util.UUID, Long>> getTopBalances(int limit) {
         java.util.List<java.util.Map.Entry<java.util.UUID, Long>> all = new java.util.ArrayList<>();
         for (String key : config.getKeys(false)) {

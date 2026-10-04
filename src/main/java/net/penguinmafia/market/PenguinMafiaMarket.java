@@ -133,6 +133,10 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("aura").setExecutor(auraCommand);
         getCommand("aura").setTabCompleter(auraCommand);
 
+        ContrabandSweep contrabandSweep = new ContrabandSweep(this);
+        contrabandSweep.sweepOnlinePlayers();
+        getServer().getPluginManager().registerEvents(contrabandSweep, this);
+
         getLogger().info("Penguin Mafia Black Market enabled. " + marketManager.getListingCount() + " listings loaded.");
     }
 

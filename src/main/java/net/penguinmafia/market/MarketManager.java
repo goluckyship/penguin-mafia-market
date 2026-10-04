@@ -45,6 +45,10 @@ public class MarketManager {
         load();
     }
 
+    public Economy getEconomy() {
+        return economy;
+    }
+
     private void load() {
         if (!config.contains("listings")) return;
         for (String key : config.getConfigurationSection("listings").getKeys(false)) {

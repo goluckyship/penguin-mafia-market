@@ -1,7 +1,9 @@
 package net.penguinmafia.market;
 
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
@@ -40,6 +42,12 @@ import java.util.UUID;
  * genuinely are vanilla-obtainable (netherite, elytra, totems...) are
  * allowed, just priced steeply so a deep stock of them isn't a cheap
  * shortcut.
+ *
+ * Two prices-aren't-static systems live here too: every new listing's price
+ * is scaled by an inflation multiplier tracking the server's total Frozen
+ * Coin supply (see computeInflationMultiplier()), and Enchanted Books are
+ * stocked with real, fixed enchantments rather than sold blank (see
+ * ENCHANT_PRESETS/restockEnchantedBooks()).
  */
 public class MarketBotManager {
 
@@ -143,6 +151,35 @@ public class MarketBotManager {
         put(Material.NETHERITE_HELMET, 5500); put(Material.NETHERITE_CHESTPLATE, 8500);
         put(Material.NETHERITE_LEGGINGS, 7500); put(Material.NETHERITE_BOOTS, 5000);
         put(Material.BOW, 150); put(Material.CROSSBOW, 200); put(Material.SHIELD, 120);
+
+        // --- Hoes & shovels, every tier - these were missing entirely, which
+        // meant they fell through to the flat 15-coin catch-all default no
+        // matter the tier (a Netherite Hoe for 15 coins is exactly the kind
+        // of "super underpriced" bug this pass exists to fix). Priced in
+        // line with that tier's sword/axe/pickaxe above.
+        put(Material.WOODEN_HOE, 15); put(Material.WOODEN_SHOVEL, 12);
+        put(Material.STONE_HOE, 28); put(Material.STONE_SHOVEL, 22);
+        put(Material.IRON_HOE, 160); put(Material.IRON_SHOVEL, 110);
+        put(Material.GOLDEN_HOE, 70); put(Material.GOLDEN_SHOVEL, 60);
+        put(Material.DIAMOND_HOE, 750); put(Material.DIAMOND_SHOVEL, 650);
+        put(Material.NETHERITE_AXE, 7000); put(Material.NETHERITE_HOE, 6000); put(Material.NETHERITE_SHOVEL, 5500);
+
+        // --- High-value items that were missing a price entirely and so
+        // were also falling into the flat 15-coin catch-all - another big
+        // source of "super underpriced" items. ---
+        put(Material.BEACON, 6500); put(Material.END_CRYSTAL, 3500);
+        put(Material.ENCHANTING_TABLE, 900); put(Material.NAME_TAG, 120);
+        put(Material.DRAGON_HEAD, 1500); put(Material.WITHER_SKELETON_SKULL, 400);
+        put(Material.BREEZE_ROD, 200); put(Material.WIND_CHARGE, 25);
+        // Heavy Core/Mace: these were briefly sellable for 15 coins through
+        // the same catch-all bug, so any already bought (or crafted into a
+        // Mace) are being clawed back on top of this repricing (see
+        // ContrabandSweep). Heavy Cores are an ominous-vault-only drop from
+        // Trial Chambers - about as rare an item as exists in survival right
+        // now - so this is priced deliberately steep: 1,350,000 each, which
+        // (even at the restock loop's lowest -15% price-variance roll) puts
+        // a full stack of 64 at roughly 73,400,000 coins, never under 73M.
+        put(Material.HEAVY_CORE, 1_350_000); put(Material.MACE, 1_500_000);
 
         // --- Rockets - the requested specialty item ---
         put(Material.FIREWORK_ROCKET, 20);
@@ -597,6 +634,8 @@ public class MarketBotManager {
      */
     public int refresh() {
         purgeSpawnEggListings();
+
+        double inflationMultiplier = computeInflationMultiplier();
         Map<Material, List<Listing>> existingByMaterial = groupDealerListings();
 
         int restocked = 0;
@@ -617,7 +656,7 @@ public class MarketBotManager {
                 while (existing.size() < MIN_STOCK_STACKS) {
                     // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
                     double variance = 0.85 + random.nextDouble() * 0.30;
-                    long price = Math.max(1, Math.round(unitPrice * stackSize * variance));
+                    long price = Math.max(1, Math.round(unitPrice * stackSize * variance * inflationMultiplier));
 
                     Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
                             new ItemStack(material, stackSize), price);
@@ -638,26 +677,48 @@ public class MarketBotManager {
             }
         }
 
+        restockEnchantedBooks(inflationMultiplier);
+
         market.save();
         plugin.getLogger().info("Black Market Dealer added stock to " + restocked
-                + " item type(s) (existing listings left in place).");
+                + " item type(s) (existing listings left in place, " + inflationMultiplier + "x inflation).");
         return restocked;
     }
 
+    /** Clamp bounds for computeInflationMultiplier() - see its javadoc. */
+    private static final double MIN_INFLATION_MULTIPLIER = 0.5;
+    private static final double MAX_INFLATION_MULTIPLIER = 10.0;
+
     /**
-     * Groups the dealer's current listings by material, one list per
-     * material rather than merging them - under this design a material is
-     * meant to have up to MIN_STOCK_STACKS separate stack-sized listings at
-     * once, not one combined listing. Also a defensive safety net: if any
-     * listing is somehow already sitting above the 1-99 range Paper's item
-     * serialization allows (e.g. leftover state from an earlier buggy build
-     * that tried one oversized listing per material instead of many
-     * stack-sized ones), its amount is clamped back down right here, before
-     * anything gets a chance to call market.save() and throw.
+     * Prices aren't meant to be fixed forever - as the server's total Frozen
+     * Coin supply grows (job payouts, playtime rewards, AFK farms, selling
+     * to other players...), a hardcoded price slowly becomes trivial to
+     * afford, so every new listing this restock creates gets scaled by how
+     * much the economy has grown since tracking started.
      *
-     * @return every material the dealer currently stocks, mapped to all of
-     *         its current listings
+     * The very first time this runs, today's total circulating coins becomes
+     * the permanent 1.0x baseline (persisted in economy.yml, not reset by a
+     * restart); every later restock compares the *current* total back to
+     * that same baseline. A server that's since paid out twice as many
+     * coins as it had at that baseline prices new stock at ~2x; one that's
+     * barely grown stays near 1x. Clamped to [0.5x, 10x] so an early-game
+     * near-zero economy or a runaway late-game one can't send prices to
+     * absurd extremes in either direction.
      */
+    private double computeInflationMultiplier() {
+        Economy economy = market.getEconomy();
+        long baseline = economy.getInflationBaseline();
+        long currentTotal = economy.getTotalCirculatingCoins();
+
+        if (baseline <= 0) {
+            baseline = Math.max(currentTotal, 1000L);
+            economy.setInflationBaseline(baseline);
+        }
+
+        double multiplier = currentTotal / (double) baseline;
+        return Math.max(MIN_INFLATION_MULTIPLIER, Math.min(MAX_INFLATION_MULTIPLIER, multiplier));
+    }
+
     /**
      * One-time cleanup, re-run (cheaply) on every refresh: deletes any
      * dealer-owned listing for a spawn egg. An earlier build briefly let the
@@ -679,6 +740,96 @@ public class MarketBotManager {
             plugin.getLogger().info("Black Market Dealer: removed " + removed
                     + " spawn egg listing(s) - no spawn egg belongs on /bm.");
         }
+    }
+
+    // ================================================================
+    // Enchanted books - sold with a real, fixed enchantment on them
+    // instead of a blank, useless "Enchanted Book" that used to fall into
+    // the flat 15-coin catch-all. Each preset keeps exactly one listing in
+    // stock at a time (there's no "stack" of a specific enchanted book the
+    // way there's a stack of cobblestone), re-created once bought.
+    // ================================================================
+
+    private record EnchantPreset(Enchantment enchantment, int level, long price) {}
+
+    private static final List<EnchantPreset> ENCHANT_PRESETS = List.of(
+            new EnchantPreset(Enchantment.MENDING, 1, 4500),
+            new EnchantPreset(Enchantment.SILK_TOUCH, 1, 1200),
+            new EnchantPreset(Enchantment.FORTUNE, 3, 1600),
+            new EnchantPreset(Enchantment.LOOTING, 3, 1400),
+            new EnchantPreset(Enchantment.SHARPNESS, 5, 1800),
+            new EnchantPreset(Enchantment.PROTECTION, 4, 1600),
+            new EnchantPreset(Enchantment.UNBREAKING, 3, 500),
+            new EnchantPreset(Enchantment.EFFICIENCY, 5, 900),
+            new EnchantPreset(Enchantment.POWER, 5, 1300),
+            new EnchantPreset(Enchantment.INFINITY, 1, 2500),
+            new EnchantPreset(Enchantment.FLAME, 1, 300),
+            new EnchantPreset(Enchantment.PUNCH, 2, 250),
+            new EnchantPreset(Enchantment.RESPIRATION, 3, 350),
+            new EnchantPreset(Enchantment.AQUA_AFFINITY, 1, 250),
+            new EnchantPreset(Enchantment.FEATHER_FALLING, 4, 500),
+            new EnchantPreset(Enchantment.FIRE_PROTECTION, 4, 500),
+            new EnchantPreset(Enchantment.THORNS, 3, 700),
+            new EnchantPreset(Enchantment.SWEEPING_EDGE, 3, 600),
+            new EnchantPreset(Enchantment.MULTISHOT, 1, 500),
+            new EnchantPreset(Enchantment.QUICK_CHARGE, 3, 400),
+            new EnchantPreset(Enchantment.PIERCING, 4, 400),
+            new EnchantPreset(Enchantment.RIPTIDE, 3, 900),
+            new EnchantPreset(Enchantment.LOYALTY, 3, 500),
+            new EnchantPreset(Enchantment.CHANNELING, 1, 1500),
+            new EnchantPreset(Enchantment.IMPALING, 5, 500),
+            new EnchantPreset(Enchantment.DEPTH_STRIDER, 3, 400),
+            new EnchantPreset(Enchantment.SOUL_SPEED, 3, 700),
+            new EnchantPreset(Enchantment.SWIFT_SNEAK, 3, 700),
+            new EnchantPreset(Enchantment.LUCK_OF_THE_SEA, 3, 350),
+            new EnchantPreset(Enchantment.LURE, 3, 300),
+            new EnchantPreset(Enchantment.BINDING_CURSE, 1, 200),
+            new EnchantPreset(Enchantment.VANISHING_CURSE, 1, 150),
+            new EnchantPreset(Enchantment.KNOCKBACK, 2, 150),
+            new EnchantPreset(Enchantment.FIRE_ASPECT, 2, 350),
+            new EnchantPreset(Enchantment.SMITE, 5, 350),
+            new EnchantPreset(Enchantment.BANE_OF_ARTHROPODS, 5, 300),
+            // 1.21 Mace enchantments - new and rare, priced accordingly
+            new EnchantPreset(Enchantment.WIND_BURST, 3, 2200),
+            new EnchantPreset(Enchantment.DENSITY, 5, 2000),
+            new EnchantPreset(Enchantment.BREACH, 4, 2000)
+    );
+
+    /**
+     * Makes sure each preset in ENCHANT_PRESETS has exactly one matching
+     * listing in stock, creating one (at the given inflation-adjusted price)
+     * whenever it's missing - whether because it's never been stocked
+     * before, or because a player just bought the last copy.
+     */
+    private void restockEnchantedBooks(double inflationMultiplier) {
+        List<Listing> existingBooks = new ArrayList<>();
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            if (listing.item.getType() == Material.ENCHANTED_BOOK) existingBooks.add(listing);
+        }
+
+        int restocked = 0;
+        for (EnchantPreset preset : ENCHANT_PRESETS) {
+            boolean inStock = existingBooks.stream().anyMatch(listing -> matchesPreset(listing.item, preset));
+            if (inStock) continue;
+
+            ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+            EnchantmentStorageMeta meta = (EnchantmentStorageMeta) book.getItemMeta();
+            meta.addStoredEnchant(preset.enchantment(), preset.level(), true);
+            book.setItemMeta(meta);
+
+            long price = Math.max(1, Math.round(preset.price() * inflationMultiplier));
+            market.createSystemListing(SELLER_ID, SELLER_NAME, book, price);
+            restocked++;
+        }
+        if (restocked > 0) {
+            plugin.getLogger().info("Black Market Dealer restocked " + restocked + " enchanted book listing(s).");
+        }
+    }
+
+    private boolean matchesPreset(ItemStack item, EnchantPreset preset) {
+        if (!(item.getItemMeta() instanceof EnchantmentStorageMeta meta)) return false;
+        Map<Enchantment, Integer> stored = meta.getStoredEnchants();
+        return stored.size() == 1 && preset.level() == stored.getOrDefault(preset.enchantment(), -1);
     }
 
     private Map<Material, List<Listing>> groupDealerListings() {
