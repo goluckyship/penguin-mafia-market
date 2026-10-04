@@ -596,6 +596,7 @@ public class MarketBotManager {
      * @return how many item types received new stock this round
      */
     public int refresh() {
+        purgeSpawnEggListings();
         Map<Material, List<Listing>> existingByMaterial = groupDealerListings();
 
         int restocked = 0;
@@ -657,6 +658,29 @@ public class MarketBotManager {
      * @return every material the dealer currently stocks, mapped to all of
      *         its current listings
      */
+    /**
+     * One-time cleanup, re-run (cheaply) on every refresh: deletes any
+     * dealer-owned listing for a spawn egg. An earlier build briefly let the
+     * "everything else" catch-all restock every mob's spawn egg before that
+     * was caught and excluded - this clears out whatever it already placed,
+     * so the villager egg (bought only through /shop) stays the only spawn
+     * egg obtainable anywhere on the server. Harmless to run every time:
+     * once they're gone, this is just an empty scan.
+     */
+    private void purgeSpawnEggListings() {
+        int removed = 0;
+        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+            if (listing.item.getType().name().endsWith("_SPAWN_EGG")) {
+                market.removeListing(listing.id);
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            plugin.getLogger().info("Black Market Dealer: removed " + removed
+                    + " spawn egg listing(s) - no spawn egg belongs on /bm.");
+        }
+    }
+
     private Map<Material, List<Listing>> groupDealerListings() {
         Map<Material, List<Listing>> byMaterial = new HashMap<>();
         for (Listing listing : market.getListingsBy(SELLER_ID)) {
