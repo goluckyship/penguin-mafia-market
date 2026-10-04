@@ -609,16 +609,57 @@ public class MarketBotManager {
         this.market = market;
     }
 
-    /** Starts the restock timer - an immediate first stock, then every REFRESH_INTERVAL after that. */
+    /**
+     * Starts the restock timer - an immediate first stock, then every
+     * REFRESH_INTERVAL after that. Also runs the same underpriced-listing
+     * audit /bm restock prints in chat, every time, automatically - without
+     * this, a stale/bugged listing only ever gets surfaced if an op happens
+     * to notice a price looks wrong in the GUI and thinks to run /bm restock
+     * themselves. Logged to console either way, and also pushed straight to
+     * any op who's online, so it doesn't depend on anyone remembering to
+     * check.
+     */
     public static MarketBotManager start(PenguinMafiaMarket plugin, MarketManager market) {
         MarketBotManager manager = new MarketBotManager(plugin, market);
         new BukkitRunnable() {
             @Override
             public void run() {
                 manager.refresh();
+                manager.reportUnderpricedListings();
             }
         }.runTaskTimer(plugin, 100L, REFRESH_INTERVAL_TICKS);
         return manager;
+    }
+
+    /**
+     * Runs auditUnderpricedListings() and pushes whatever it finds to the
+     * console (always) and to every online op (so it's seen without anyone
+     * needing to run /bm restock by hand). Shares the exact same check
+     * /bm restock's chat report uses, just fired automatically instead of
+     * only on a manual trigger.
+     */
+    private void reportUnderpricedListings() {
+        List<String> problems;
+        try {
+            problems = auditUnderpricedListings();
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Black Market Dealer: automatic underpriced-listing audit failed.", e);
+            return;
+        }
+        if (problems.isEmpty()) return;
+
+        plugin.getLogger().warning("Black Market: " + problems.size() + " listing(s) still look underpriced:");
+        for (String problem : problems) {
+            plugin.getLogger().warning(" - " + problem);
+        }
+
+        for (org.bukkit.entity.Player op : org.bukkit.Bukkit.getOnlinePlayers()) {
+            if (!op.isOp()) continue;
+            op.sendMessage(org.bukkit.ChatColor.YELLOW + "[Black Market] " + problems.size()
+                    + " listing(s) still look underpriced - see console for the full list ("
+                    + "dealer ones get auto-purged next restock; player ones need /bm admin setprice or refund).");
+        }
     }
 
     /**
