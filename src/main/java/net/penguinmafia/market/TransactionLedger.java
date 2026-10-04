@@ -121,6 +121,25 @@ public class TransactionLedger {
         return matches;
     }
 
+    /**
+     * Every buyer who bought an item from a given seller whose description
+     * contains `itemNameFragment` (case-insensitive) - used to find exactly
+     * who bought something through a since-fixed pricing bug, rather than
+     * treating every player as a suspect. Only looks back as far as the kept
+     * ledger goes (MAX_ENTRIES most recent sales server-wide), so a purchase
+     * old enough to have scrolled out of the ledger won't show up here.
+     */
+    public java.util.Set<UUID> getBuyersOf(UUID sellerId, String itemNameFragment) {
+        java.util.Set<UUID> buyers = new java.util.HashSet<>();
+        String needle = itemNameFragment.toLowerCase();
+        for (Sale sale : sales) {
+            if (sale.sellerId.equals(sellerId) && sale.itemDescription.toLowerCase().contains(needle)) {
+                buyers.add(sale.buyerId);
+            }
+        }
+        return buyers;
+    }
+
     /** The most recent sales server-wide, regardless of who was involved. */
     public List<Sale> getRecent(int limit) {
         List<Sale> recent = new ArrayList<>();

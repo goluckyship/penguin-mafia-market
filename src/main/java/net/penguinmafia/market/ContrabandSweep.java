@@ -14,6 +14,8 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * One-time cleanup for the Heavy Core pricing bug: an earlier build briefly
@@ -21,23 +23,33 @@ import java.io.IOException;
  * smithing table) sell through /bm's "everything else" catch-all for 15
  * coins, before it was caught and repriced to a fair ~1.35 million.
  *
- * This confiscates any Heavy Core or Mace a player is holding - inventory,
- * armor, offhand, ender chest - the first time they're seen after this fix
- * ships, tracked in contraband_sweep.yml so it only ever runs once per
- * player rather than clawing back a legitimately-bought copy later.
+ * This only confiscates Heavy Core/Mace from players the TransactionLedger
+ * actually shows bought Heavy Core from the Black Market Dealer at that
+ * bugged price - never from a player who got one legitimately (a real
+ * Trial Chamber vault drop, or a fairly-priced purchase after this fix).
+ * Tracked in contraband_sweep.yml so it only ever runs once per player.
+ *
+ * Caveat: the ledger only keeps its most recent entries server-wide, so a
+ * glitched purchase old enough to have scrolled out of it won't be caught
+ * here - this is a best-effort sweep against what's still on record, not a
+ * guarantee every glitched Heavy Core gets found.
  */
 public class ContrabandSweep implements Listener {
 
     private static final Material[] CONFISCATED = { Material.HEAVY_CORE, Material.MACE };
 
     private final PenguinMafiaMarket plugin;
+    private final Set<UUID> flaggedBuyers;
     private final File file;
     private final YamlConfiguration config;
 
-    public ContrabandSweep(PenguinMafiaMarket plugin) {
+    public ContrabandSweep(PenguinMafiaMarket plugin, TransactionLedger ledger) {
         this.plugin = plugin;
+        this.flaggedBuyers = ledger.getBuyersOf(MarketBotManager.SELLER_ID, "heavy core");
         this.file = new File(plugin.getDataFolder(), "contraband_sweep.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
+        plugin.getLogger().info("Contraband sweep: " + flaggedBuyers.size()
+                + " player(s) on record as having bought Heavy Core from the Black Market Dealer.");
     }
 
     /** Runs once at startup for anyone already online when this fix is deployed. */
@@ -53,7 +65,10 @@ public class ContrabandSweep implements Listener {
     }
 
     private void sweep(Player player) {
-        String key = player.getUniqueId().toString();
+        UUID id = player.getUniqueId();
+        if (!flaggedBuyers.contains(id)) return; // never bought Heavy Core from the dealer - nothing to claw back
+
+        String key = id.toString();
         if (config.getBoolean(key, false)) return; // already swept this player once
 
         PlayerInventory inv = player.getInventory();
@@ -85,9 +100,9 @@ public class ContrabandSweep implements Listener {
         save();
 
         if (removed > 0) {
-            player.sendMessage(ChatColor.RED + "A pricing bug briefly let Heavy Cores (and Maces made from "
-                    + "them) sell for far below a fair price. " + removed + " item(s) were removed from your "
-                    + "inventory as a result - sorry for the inconvenience.");
+            player.sendMessage(ChatColor.RED + "Our records show you bought a Heavy Core from the Black Market "
+                    + "Dealer while it was mispriced. " + removed + " Heavy Core/Mace item(s) were removed from "
+                    + "your inventory as a result - sorry for the inconvenience.");
             plugin.getLogger().info("Contraband sweep: removed " + removed
                     + " Heavy Core/Mace item(s) from " + player.getName());
         }

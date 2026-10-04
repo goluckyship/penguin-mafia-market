@@ -133,7 +133,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         getCommand("aura").setExecutor(auraCommand);
         getCommand("aura").setTabCompleter(auraCommand);
 
-        ContrabandSweep contrabandSweep = new ContrabandSweep(this);
+        ContrabandSweep contrabandSweep = new ContrabandSweep(this, transactionLedger);
         contrabandSweep.sweepOnlinePlayers();
         getServer().getPluginManager().registerEvents(contrabandSweep, this);
 
