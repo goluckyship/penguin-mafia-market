@@ -26,6 +26,12 @@
       <version>26.2.build.129-stable</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.10.2</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -35,6 +41,18 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <!--
+          Explicit modern surefire so JUnit 5 is picked up natively (the
+          default surefire version pulled in by the super POM predates
+          JUnit 5 support entirely) - without this, every test below would
+          silently not run at all instead of actually verifying anything,
+          and `mvn package` would report success either way.
+        -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
       </plugin>
     </plugins>
   </build>

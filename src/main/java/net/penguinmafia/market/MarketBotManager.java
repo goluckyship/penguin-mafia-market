@@ -712,12 +712,24 @@ public class MarketBotManager {
                 // class builds should ever be able to exceed that ceiling.
                 int stackSize = Math.min(material.getMaxStackSize(), MAX_SERIALIZABLE_STACK);
 
+                // Heavy Core/Mace have an explicit, non-negotiable price
+                // floor (a stack of 64 must never go under 73M - see the
+                // comment on their BASE_PRICES entry). The inflation
+                // multiplier can go as low as 0.5x if the server's coin
+                // supply ever shrinks below its baseline, which would let a
+                // stack drop to ~36.7M - well under that floor. These two
+                // items only ever get more expensive as the economy grows,
+                // never cheaper, so that floor holds no matter what the
+                // economy does.
+                double effectiveMultiplier = (material == Material.HEAVY_CORE || material == Material.MACE)
+                        ? Math.max(1.0, inflationMultiplier) : inflationMultiplier;
+
                 List<Listing> existing = existingByMaterial.computeIfAbsent(material, m -> new ArrayList<>());
                 boolean addedAny = false;
                 while (existing.size() < MIN_STOCK_STACKS) {
                     // +/-15% variance so the dealer doesn't look like a flat, copy-pasted price list
                     double variance = 0.85 + random.nextDouble() * 0.30;
-                    long price = Math.max(1, Math.round(unitPrice * stackSize * variance * inflationMultiplier));
+                    long price = Math.max(1, Math.round(unitPrice * stackSize * variance * effectiveMultiplier));
 
                     Listing created = market.createSystemListing(SELLER_ID, SELLER_NAME,
                             new ItemStack(material, stackSize), price);
@@ -830,6 +842,22 @@ public class MarketBotManager {
      * removes at the real price, so once every stale listing is gone this is
      * just an empty scan on every later restock.
      */
+    /**
+     * The lowest price a single restock roll could ever legitimately produce
+     * for this material's current fair unit price - unitPrice * amount *
+     * the lowest variance roll (0.85) * the lowest inflation multiplier that
+     * can ever apply to it. For almost everything that's the global 0.5x
+     * floor (see MIN_INFLATION_MULTIPLIER); Heavy Core/Mace use 1.0x instead
+     * (see the effectiveMultiplier comment in refresh()'s stocking loop) so
+     * their own explicit 73M-a-stack floor can't be undercut by this helper
+     * thinking a lower price is still plausible.
+     */
+    private long minLegitimateStackPrice(Material type, long fairUnitPrice, int amount) {
+        double minMultiplier = (type == Material.HEAVY_CORE || type == Material.MACE)
+                ? 1.0 : MIN_INFLATION_MULTIPLIER;
+        return Math.round(fairUnitPrice * amount * 0.85 * minMultiplier);
+    }
+
     private void purgeStaleUnderpricedListings() {
         int removed = 0;
         for (Listing listing : market.getListingsBy(SELLER_ID)) {
@@ -840,8 +868,12 @@ public class MarketBotManager {
             if (fairUnitPrice == null) continue; // not something this class prices - leave it alone
 
             int amount = Math.max(1, listing.item.getAmount());
-            long fairStackPrice = fairUnitPrice * amount;
-            long perStackFloor = Math.round(fairStackPrice * 0.3);
+            // 0.9x of the true legitimate minimum: always below anything a
+            // real restock roll could produce (so a genuine listing is
+            // never falsely purged), while still well above what a bugged
+            // flat-catch-all price (or the old Heavy Core exploit) actually
+            // looks like.
+            long perStackFloor = Math.round(minLegitimateStackPrice(type, fairUnitPrice, amount) * 0.9);
 
             if (listing.price < perStackFloor) { // well below fair - a leftover from a since-fixed price
                 market.removeListing(listing.id);
@@ -910,7 +942,7 @@ public class MarketBotManager {
             }
 
             long fairStackPrice = fairUnitPrice * amount;
-            long floor = Math.round(fairStackPrice * 0.3);
+            long floor = Math.round(minLegitimateStackPrice(type, fairUnitPrice, amount) * 0.9);
             if (listing.price < floor) {
                 problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
                         + " by " + (isDealer ? "dealer" : listing.sellerName)
