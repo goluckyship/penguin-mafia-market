@@ -814,33 +814,57 @@ public class MarketBotManager {
     }
 
     /**
-     * Re-runs the exact same "is this well below fair" check
-     * purgeStaleUnderpricedListings() uses, but reports instead of removing -
-     * called right after a restock so whoever triggered it can see in chat,
-     * by exact Material name, listing id and price, anything still priced
-     * wrong RIGHT NOW. Exists because "a price still looks wrong in the GUI"
-     * isn't enough to debug from - the GUI only shows a human-readable item
-     * name (which can't be matched back to a specific Material/BASE_PRICES
-     * entry on sight, especially for an item whose display name doesn't
-     * obviously match its enum constant), while this reports the ground
-     * truth the pricing code actually keyed off of.
+     * Same "is this well below fair" check purgeStaleUnderpricedListings()
+     * runs against the dealer's own stock, but reports instead of removing,
+     * and runs against EVERY listing on the market - a player's own /bm sell
+     * listing can be just as underpriced as a stale dealer one (MarketCommand
+     * now blocks new player listings below this same floor, but that can't
+     * retroactively fix one that was already live before that check shipped,
+     * or one someone lists for a friend at a price this class doesn't know
+     * about some other way). Called right after a restock so whoever
+     * triggered it can see in chat, by exact Material name, listing id,
+     * seller and price, anything still priced wrong RIGHT NOW - a GUI
+     * tooltip's display name can't reliably be matched back to the
+     * Material/pricing rule that produced it, so this reports the ground
+     * truth the pricing code actually keyed off of. A flagged dealer listing
+     * gets auto-purged and replaced next restock; a flagged player listing
+     * needs an op to step in with /bm admin setprice <id> <price> (or
+     * refund) since it's their item, not the dealer's stock.
      */
     public List<String> auditUnderpricedListings() {
         List<String> problems = new ArrayList<>();
-        for (Listing listing : market.getListingsBy(SELLER_ID)) {
+        for (Listing listing : market.getAllListings()) {
             Material type = listing.item.getType();
-            if (type == Material.ENCHANTED_BOOK) continue; // priced per-preset, checked separately below
+            boolean isDealer = listing.seller.equals(SELLER_ID);
+
+            if (type == Material.ENCHANTED_BOOK) {
+                // Blank-book check only makes sense for the dealer's own
+                // stock (restockEnchantedBooks should never create one) - a
+                // player owning/selling a blank enchanted book isn't a bug.
+                if (isDealer) {
+                    if (!(listing.item.getItemMeta() instanceof EnchantmentStorageMeta meta)) {
+                        problems.add("#" + listing.id + " ENCHANTED_BOOK (dealer) priced " + listing.price
+                                + " - item meta isn't EnchantmentStorageMeta");
+                    } else if (meta.getStoredEnchants().isEmpty()) {
+                        problems.add("#" + listing.id + " ENCHANTED_BOOK (dealer) priced " + listing.price
+                                + " - blank, no enchantment stored");
+                    }
+                }
+                continue;
+            }
 
             Long fairUnitPrice = BASE_PRICES.get(type);
             int amount = Math.max(1, listing.item.getAmount());
 
             if (fairUnitPrice == null) {
-                // Not in BASE_PRICES at all - this class never created it
-                // (or priced it) in the first place, so it's not this
-                // dealer's restock logic that's wrong; still worth
-                // surfacing, since it's sitting under the dealer's name.
-                problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
-                        + " - NOT in BASE_PRICES at all (this class never priced this material)");
+                // Not in BASE_PRICES at all. Normal for a player (they can
+                // own all sorts of things this class never prices); only
+                // worth flagging when it's sitting under the dealer's own
+                // name, since this class should never have created it then.
+                if (isDealer) {
+                    problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
+                            + " (dealer) - NOT in BASE_PRICES at all (this class never priced this material)");
+                }
                 continue;
             }
 
@@ -848,20 +872,8 @@ public class MarketBotManager {
             long floor = Math.round(fairStackPrice * 0.3);
             if (listing.price < floor) {
                 problems.add("#" + listing.id + " " + type + " x" + amount + " priced " + listing.price
+                        + " by " + (isDealer ? "dealer" : listing.sellerName)
                         + " (base unit price " + fairUnitPrice + ", fair stack price ~" + fairStackPrice + ")");
-            }
-        }
-
-        for (Listing listing : market.getListingsBy(SELLER_ID)) {
-            if (listing.item.getType() != Material.ENCHANTED_BOOK) continue;
-            if (!(listing.item.getItemMeta() instanceof EnchantmentStorageMeta meta)) {
-                problems.add("#" + listing.id + " ENCHANTED_BOOK priced " + listing.price
-                        + " - item meta isn't EnchantmentStorageMeta");
-                continue;
-            }
-            if (meta.getStoredEnchants().isEmpty()) {
-                problems.add("#" + listing.id + " ENCHANTED_BOOK priced " + listing.price
-                        + " - blank, no enchantment stored");
             }
         }
         return problems;

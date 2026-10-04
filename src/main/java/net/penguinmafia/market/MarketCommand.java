@@ -111,6 +111,27 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // Fair-price floor: the Black Market Dealer's own stock being
+        // correctly priced means nothing if a player can still list the
+        // exact same item dirt cheap right next to it - whether that's a
+        // mistake, a favor to a friend, or laundering coins through an alt.
+        // Reuses the same hand-tuned per-material prices the dealer itself
+        // charges (MarketBotManager.BASE_PRICES), so the two systems can
+        // never disagree about what something is worth. Items with no entry
+        // there (custom-named junk, anything outside the known material
+        // list) aren't limited - nothing to compare against.
+        Long baseUnitPrice = MarketBotManager.getBasePrices().get(hand.getType());
+        if (baseUnitPrice != null) {
+            long fairPrice = baseUnitPrice * hand.getAmount();
+            long floor = Math.round(fairPrice * 0.3);
+            if (price < floor) {
+                player.sendMessage(ChatColor.RED + "That's priced too low - " + describeItem(hand)
+                        + ChatColor.RED + " is worth at least " + ChatColor.AQUA + floor + ChatColor.RED
+                        + " Frozen Coins. List it at " + floor + " or more.");
+                return true;
+            }
+        }
+
         ItemStack toSell = hand.clone();
         player.getInventory().setItemInMainHand(null);
         Listing listing = market.createListing(player, toSell, price);
@@ -166,15 +187,25 @@ public class MarketCommand implements CommandExecutor, TabCompleter {
                     + " item type(s).");
 
             // Report, by exact Material name, anything still priced wrong
-            // right now - so a bad price can be diagnosed from what's
+            // right now - across EVERY listing on the market, dealer and
+            // player alike - so a bad price can be diagnosed from what's
             // printed in chat instead of a screenshot of a GUI tooltip that
             // can't be matched back to a specific pricing rule on sight.
+            // Capped at 20 lines so a market with a lot of underpriced
+            // player listings doesn't flood chat.
             List<String> problems = marketBotManager.auditUnderpricedListings();
             if (!problems.isEmpty()) {
                 player.sendMessage(ChatColor.YELLOW + "[Black Market] " + problems.size()
-                        + " listing(s) still look underpriced after this restock:");
+                        + " listing(s) still look underpriced right now (dealer ones get auto-purged next "
+                        + "restock; player ones need /bm admin setprice or refund):");
+                int shown = 0;
                 for (String problem : problems) {
+                    if (shown >= 20) {
+                        player.sendMessage(ChatColor.GRAY + " - ...and " + (problems.size() - shown) + " more.");
+                        break;
+                    }
                     player.sendMessage(ChatColor.GRAY + " - " + problem);
+                    shown++;
                 }
             }
         } catch (Throwable t) {

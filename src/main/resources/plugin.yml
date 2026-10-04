@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.37.4
+version: 1.38.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
