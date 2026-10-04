@@ -4,16 +4,26 @@ import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * The fixed catalog for /shop: plain building and decoration blocks only -
- * wool, terracotta, concrete, glass, planks, stone and brick variants, and
- * the like. Deliberately leaves out anything rare or valuable (ore/mineral
- * storage blocks, netherite, and so on), so the shop is a convenience for
- * builders rather than a way to buy power.
+ * The catalog for /shop. Starts with the original hand-picked building and
+ * decoration block categories - wool, terracotta, concrete, glass, planks,
+ * stone and brick variants, and the like - then, on top of those, sells
+ * "any and everything that's not banned": ores and their storage blocks,
+ * armor trim smithing templates, wind charges, tools, weapons, armor,
+ * potions, and every other obtainable material, built programmatically off
+ * Material.values() rather than hand-typed so nothing is missed and nothing
+ * here needs updating when a future game version adds more. Only BANNED
+ * (creative-only/admin-only/structurally-special materials no survival
+ * player could legitimately hold - see MarketBotManager's own BLOCKED set,
+ * which this mirrors) and legacy/non-item materials are left out.
  */
 public final class BuildingBlockShop {
 
@@ -30,6 +40,16 @@ public final class BuildingBlockShop {
     public static final List<Category> CATEGORIES = new ArrayList<>();
     public static final List<String> TAB_NAMES = new ArrayList<>();
     private static final Map<String, Material> BY_NAME = new HashMap<>();
+
+    /**
+     * The materials added by the "sell everything not banned" expansion
+     * (ores/valuable blocks, armor trims, and the long catch-all tail) - as
+     * opposed to the original hand-picked plain building-block categories.
+     * ShopGUI uses this to know which materials should get a real per-item
+     * price (reused from MarketBotManager's hand-tuned BASE_PRICES) instead
+     * of the flat per-stack building-block rate.
+     */
+    public static final Set<Material> EXPANDED_CATALOG = new HashSet<>();
 
     private static void add(String categoryName, Material... blocks) {
         CATEGORIES.add(new Category(categoryName, blocks));
@@ -145,6 +165,63 @@ public final class BuildingBlockShop {
         // Not a building block - a one-off expensive special sold per-item
         // rather than per-stack (see ShopGUI.CUSTOM_UNIT_PRICE).
         add("Special", Material.VILLAGER_SPAWN_EGG);
+
+        // Materials that must never show up for sale no matter what - the
+        // same creative-only/admin-only/structurally-special set the Black
+        // Market Dealer refuses to stock, plus a couple more that only
+        // matter once "sell literally everything" is on the table.
+        Set<Material> banned = EnumSet.of(
+                Material.DRAGON_EGG, Material.COMMAND_BLOCK, Material.CHAIN_COMMAND_BLOCK,
+                Material.REPEATING_COMMAND_BLOCK, Material.COMMAND_BLOCK_MINECART,
+                Material.STRUCTURE_BLOCK, Material.STRUCTURE_VOID, Material.BARRIER,
+                Material.DEBUG_STICK, Material.JIGSAW, Material.LIGHT, Material.BEDROCK,
+                Material.END_PORTAL_FRAME, Material.SPAWNER, Material.TRIAL_SPAWNER,
+                Material.VAULT, Material.REINFORCED_DEEPSLATE, Material.PETRIFIED_OAK_SLAB,
+                Material.KNOWLEDGE_BOOK
+        );
+
+        // Everything already added above (by Material, not by category) so
+        // nothing gets listed twice.
+        Set<Material> alreadyListed = new HashSet<>(BY_NAME.values());
+
+        List<Material> ores = new ArrayList<>();
+        List<Material> trims = new ArrayList<>();
+        List<Material> everythingElse = new ArrayList<>();
+
+        for (Material material : Material.values()) {
+            if (!material.isItem() || material.isLegacy()) continue;
+            if (banned.contains(material)) continue;
+            if (alreadyListed.contains(material)) continue;
+
+            String name = material.name();
+            boolean oreLike = name.endsWith("_ORE") || name.equals("ANCIENT_DEBRIS")
+                    || name.equals("RAW_IRON_BLOCK") || name.equals("RAW_GOLD_BLOCK")
+                    || name.equals("RAW_COPPER_BLOCK")
+                    || (name.endsWith("_BLOCK") && (name.contains("DIAMOND") || name.contains("EMERALD")
+                        || name.contains("GOLD") || name.contains("IRON") || name.contains("LAPIS")
+                        || name.contains("REDSTONE") || name.contains("NETHERITE") || name.contains("COAL")
+                        || name.contains("AMETHYST") || name.contains("COPPER")));
+
+            if (oreLike) {
+                ores.add(material);
+            } else if (name.endsWith("_SMITHING_TEMPLATE")) {
+                trims.add(material);
+            } else {
+                everythingElse.add(material);
+            }
+        }
+
+        ores.sort(Comparator.comparing(Enum::name));
+        trims.sort(Comparator.comparing(Enum::name));
+        everythingElse.sort(Comparator.comparing(Enum::name));
+
+        if (!ores.isEmpty()) add("Ores & Valuable Blocks", ores.toArray(new Material[0]));
+        if (!trims.isEmpty()) add("Armor Trims", trims.toArray(new Material[0]));
+        if (!everythingElse.isEmpty()) add("Everything Else", everythingElse.toArray(new Material[0]));
+
+        EXPANDED_CATALOG.addAll(ores);
+        EXPANDED_CATALOG.addAll(trims);
+        EXPANDED_CATALOG.addAll(everythingElse);
     }
 
     private BuildingBlockShop() {

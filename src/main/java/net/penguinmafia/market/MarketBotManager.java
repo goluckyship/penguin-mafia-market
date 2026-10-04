@@ -78,6 +78,16 @@ public class MarketBotManager {
 
     /** material -> fair base price per single item, hand-tuned by rarity/usefulness. */
     private static final Map<Material, Long> BASE_PRICES = new LinkedHashMap<>();
+
+    /**
+     * Read-only view of BASE_PRICES, so other systems (the /shop GUI, for
+     * one) that also sell vanilla items can reuse the same hand-tuned
+     * per-item prices instead of inventing their own and drifting out of
+     * sync with what the Black Market charges for the same material.
+     */
+    public static Map<Material, Long> getBasePrices() {
+        return java.util.Collections.unmodifiableMap(BASE_PRICES);
+    }
     static {
         // --- Common building blocks / resources: cheap, sell in bulk ---
         put(Material.DIRT, 1); put(Material.COBBLESTONE, 2); put(Material.STONE, 3);
