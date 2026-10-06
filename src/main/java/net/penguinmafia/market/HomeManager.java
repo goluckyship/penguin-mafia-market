@@ -71,11 +71,17 @@ public class HomeManager {
                 (float) s.getDouble("yaw"), (float) s.getDouble("pitch"));
     }
 
-    /** World name for display even if the world is unloaded; null if the slot is empty. */
+    /** Friendly world name for display (no coordinates); null if the slot is empty. */
     public String describe(UUID id, int slot) {
         ConfigurationSection s = config.getConfigurationSection(path(id, slot));
         if (s == null) return null;
-        return s.getString("world", "?") + " " + (int) s.getDouble("x") + ", " + (int) s.getDouble("y") + ", " + (int) s.getDouble("z");
+        String world = s.getString("world", "?");
+        switch (world.toLowerCase()) {
+            case "world": return "Overworld";
+            case "world_nether": return "The Nether";
+            case "world_the_end": return "The End";
+            default: return world;
+        }
     }
 
     /** The home's label (e.g. an imported name), or null. */
