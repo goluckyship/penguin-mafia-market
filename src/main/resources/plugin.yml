@@ -1,11 +1,17 @@
 name: PenguinMafiaMarket
-version: 1.40.0
+version: 1.41.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
 description: Player-run Black Market with a real /bm GUI and Frozen Coin currency.
 
 commands:
+  guiedit:
+    description: Edit the /info menu and /shop catalog/prices in game.
+    usage: |
+      /guiedit help - list every editing subcommand
+    permission: penguinmafia.guiedit
+    permission-message: You don't have permission to use /guiedit.
   bm:
     description: Open or manage the Penguin Mafia Black Market.
     usage: |
@@ -225,4 +231,7 @@ permissions:
     default: op
   penguinmafia.auction.forcecancel:
     description: Force-cancel another player's auction even after it already has a bid.
+    default: op
+  penguinmafia.guiedit:
+    description: Use /guiedit (edit the /info menu and /shop items and prices in game).
     default: op

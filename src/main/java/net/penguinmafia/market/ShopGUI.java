@@ -50,18 +50,24 @@ public class ShopGUI {
     private static final int QTY_CLOSE_SLOT = 26;
 
     private final Economy economy;
-    private final List<Material> allBlocks;
 
     public ShopGUI(Economy economy) {
         this.economy = economy;
-        this.allBlocks = new ArrayList<>();
-        for (BuildingBlockShop.Category category : BuildingBlockShop.CATEGORIES) {
-            allBlocks.addAll(category.blocks);
-        }
+    }
+
+    /** Rebuilt on every call so /guiedit shop changes show up the next time anyone opens or pages the shop. */
+    private List<Material> allBlocks() {
+        return GuiConfig.get().shopCatalog();
     }
 
     public int getTotalPages() {
-        return Math.max(1, (int) Math.ceil(allBlocks.size() / (double) ITEMS_PER_PAGE));
+        return Math.max(1, (int) Math.ceil(allBlocks().size() / (double) ITEMS_PER_PAGE));
+    }
+
+    /** Price for one 64-stack of a normally-priced item (op override, else the shop's flat rate). */
+    private static long stackPriceOf(Material material) {
+        Long override = GuiConfig.get().stackPrice(material);
+        return override != null ? override : PRICE_PER_STACK;
     }
 
     /** Marks a catalog page inventory and remembers which material sits in which slot. */
@@ -109,6 +115,7 @@ public class ShopGUI {
         ItemStack filler = namedItem(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int i = ITEMS_PER_PAGE; i < SIZE; i++) inv.setItem(i, filler);
 
+        List<Material> allBlocks = allBlocks();
         int start = page * ITEMS_PER_PAGE;
         int end = Math.min(start + ITEMS_PER_PAGE, allBlocks.size());
         for (int i = start; i < end; i++) {
@@ -134,11 +141,11 @@ public class ShopGUI {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(ChatColor.AQUA + "" + ChatColor.BOLD + displayName(material));
-        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
+        Long unitPrice = GuiConfig.get().unitPrice(material);
         String priceLine = unitPrice != null
                 ? ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(unitPrice)
                         + ChatColor.GRAY + " each"
-                : ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(PRICE_PER_STACK)
+                : ChatColor.GRAY + "Price: " + ChatColor.WHITE + CoinFormat.formatWithExact(stackPriceOf(material))
                         + ChatColor.GRAY + " per stack of " + STACK_SIZE;
         meta.setLore(Arrays.asList(
                 priceLine,
@@ -154,16 +161,16 @@ public class ShopGUI {
 
     /** How much a plain left-click in the catalog buys - a full stack normally, but just 1 for a custom-priced special. */
     public static long leftClickAmount(Material material) {
-        return CUSTOM_UNIT_PRICE.containsKey(material) ? 1 : STACK_SIZE;
+        return (GuiConfig.get().unitPrice(material) != null) ? 1 : STACK_SIZE;
     }
 
     /** Cost for `amount` of material - custom per-item price if one's set, otherwise the normal per-stack-of-64 rate. */
     private long costFor(Material material, long amount) {
-        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
+        Long unitPrice = GuiConfig.get().unitPrice(material);
         if (unitPrice != null) {
             return amount * unitPrice;
         }
-        return (long) Math.ceil(amount / (double) STACK_SIZE) * PRICE_PER_STACK;
+        return (long) Math.ceil(amount / (double) STACK_SIZE) * stackPriceOf(material);
     }
 
     public void openQuantityMenu(Player player, Material material, int originPage) {
@@ -174,7 +181,7 @@ public class ShopGUI {
         ItemStack filler = namedItem(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int i = 0; i < 27; i++) inv.setItem(i, filler);
 
-        boolean customPriced = CUSTOM_UNIT_PRICE.containsKey(material);
+        boolean customPriced = (GuiConfig.get().unitPrice(material) != null);
         // A custom-priced special (e.g. a 250,000-coin spawn egg) offers
         // plain item counts here, not multiples of a 64-stack - nobody's
         // buying 64 of those in one click by accident.
@@ -235,16 +242,16 @@ public class ShopGUI {
 
         long balance = economy.getBalance(player);
         boolean maxMode = requested <= 0;
-        Long unitPrice = CUSTOM_UNIT_PRICE.get(material);
+        Long unitPrice = GuiConfig.get().unitPrice(material);
         long toBuy;
 
         if (maxMode) {
             long affordableItems = unitPrice != null
                     ? balance / unitPrice
-                    : (balance / PRICE_PER_STACK) * STACK_SIZE;
+                    : (balance / stackPriceOf(material)) * STACK_SIZE;
             toBuy = Math.min(affordableItems, capacity);
             if (toBuy <= 0) {
-                long minCost = unitPrice != null ? unitPrice : PRICE_PER_STACK;
+                long minCost = unitPrice != null ? unitPrice : stackPriceOf(material);
                 player.sendMessage(ChatColor.RED + "You can't afford even one "
                         + (unitPrice != null ? displayName(material) : "stack of " + displayName(material))
                         + " (" + CoinFormat.formatWithExact(minCost) + " coins) - balance: "

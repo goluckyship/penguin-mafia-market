@@ -81,6 +81,7 @@ public final class PenguinMafiaMarket extends JavaPlugin {
 
         getCommand("chat").setExecutor(new ChatCommand(economy));
 
+        GuiConfig.load(this, InfoGUI.defaultEntries()); // must exist before either GUI is built
         ShopGUI shopGUI = new ShopGUI(economy);
         getServer().getPluginManager().registerEvents(new ShopGUIListener(shopGUI), this);
         getCommand("shop").setExecutor(new ShopCommand(shopGUI));
@@ -90,6 +91,9 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         InfoGUI infoGUI = new InfoGUI(this);
         getServer().getPluginManager().registerEvents(infoGUI, this);
         getCommand("info").setExecutor(new InfoCommand(infoGUI));
+        GuiEditCommand guiEditCommand = new GuiEditCommand(infoGUI, shopGUI);
+        getCommand("guiedit").setExecutor(guiEditCommand);
+        getCommand("guiedit").setTabCompleter(guiEditCommand);
 
         this.jobsManager = new JobsManager(this);
         getServer().getPluginManager().registerEvents(new JobsListener(jobsManager, economy), this);

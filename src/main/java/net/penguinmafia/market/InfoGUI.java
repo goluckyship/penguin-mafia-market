@@ -38,57 +38,53 @@ public class InfoGUI implements Listener {
         }
     }
 
-    private static class Entry {
-        final Material icon;
-        final String name;
-        final List<String> lore;
-
-        Entry(Material icon, String name, String... lore) {
-            this.icon = icon;
-            this.name = name;
-            this.lore = Arrays.asList(lore);
-        }
+    private static GuiConfig.InfoEntry entry(Material icon, String name, String... lore) {
+        List<String> raw = new ArrayList<>();
+        for (String line : lore) raw.add(GuiConfig.toRaw(line));
+        return new GuiConfig.InfoEntry(icon, name, raw);
     }
 
-    private static final List<Entry> ENTRIES = new ArrayList<>();
-    static {
-        ENTRIES.add(new Entry(Material.CHEST, "/bm",
+    /** The built-in menu, used to seed gui_config.yml the first time and by "/guiedit info reset". */
+    public static List<GuiConfig.InfoEntry> defaultEntries() {
+        List<GuiConfig.InfoEntry> entries = new ArrayList<>();
+        entries.add(entry(Material.CHEST, "/bm",
                 ChatColor.GRAY + "Open the Black Market GUI -",
                 ChatColor.GRAY + "search, sort, and filter by category.",
                 ChatColor.GRAY + "sell <price>, list, cancel <id>,",
                 ChatColor.GRAY + "balance, deposit, withdraw <amount>"));
-        ENTRIES.add(new Entry(Material.GOLD_INGOT, "/bal [player]",
+        entries.add(entry(Material.GOLD_INGOT, "/bal [player]",
                 ChatColor.GRAY + "Check your (or another player's)",
                 ChatColor.GRAY + "Frozen Coin balance."));
-        ENTRIES.add(new Entry(Material.NETHER_STAR, "/baltop (/bt)",
+        entries.add(entry(Material.NETHER_STAR, "/baltop (/bt)",
                 ChatColor.GRAY + "See who has the most Frozen Coins."));
-        ENTRIES.add(new Entry(Material.PAPER, "/pay <player> <amount>",
+        entries.add(entry(Material.PAPER, "/pay <player> <amount>",
                 ChatColor.GRAY + "Send Frozen Coins to another player."));
-        ENTRIES.add(new Entry(Material.GOLD_NUGGET, "/coinflip <amount>",
+        entries.add(entry(Material.GOLD_NUGGET, "/coinflip <amount>",
                 ChatColor.GRAY + "Bet coins on a 50/50 flip.",
                 ChatColor.GRAY + "Win doubles it, lose forfeits it."));
-        ENTRIES.add(new Entry(Material.EMERALD, "/shop",
+        entries.add(entry(Material.EMERALD, "/shop",
                 ChatColor.GRAY + "Opens a paged shop GUI - 1,000 coins",
                 ChatColor.GRAY + "per stack. Hover for price, left-click",
                 ChatColor.GRAY + "for a stack, right-click for more."));
-        ENTRIES.add(new Entry(Material.HOPPER, "/autodeposit (/ad)",
+        entries.add(entry(Material.HOPPER, "/autodeposit (/ad)",
                 ChatColor.GRAY + "Toggle auto-depositing Frozen Coins",
                 ChatColor.GRAY + "you pick up straight into your balance.",
                 ChatColor.GRAY + "Blocks /bm withdraw while it's on."));
-        ENTRIES.add(new Entry(Material.BOOK, "/chat",
+        entries.add(entry(Material.BOOK, "/chat",
                 ChatColor.GRAY + "Toggle the balance-update chat",
                 ChatColor.GRAY + "messages from Auto-Deposit/AFK Farm."));
-        ENTRIES.add(new Entry(Material.BLUE_ICE, "/frozenrealm (/fr)",
+        entries.add(entry(Material.BLUE_ICE, "/frozenrealm (/fr)",
                 ChatColor.GRAY + "Teleport to the Frozen Realm dimension.",
                 ChatColor.GRAY + "/frozenrealm back returns you home."));
-        ENTRIES.add(new Entry(Material.OAK_SIGN, "/pa",
+        entries.add(entry(Material.OAK_SIGN, "/pa",
                 ChatColor.GRAY + "Manage the looping announcement",
                 ChatColor.GRAY + "broadcast (add, remove, list, on/off)."));
-        ENTRIES.add(new Entry(Material.CLOCK, "/ptr",
+        entries.add(entry(Material.CLOCK, "/ptr",
                 ChatColor.GRAY + "Manage passive playtime rewards -",
                 ChatColor.GRAY + "a periodic coin payout for being online."));
-        ENTRIES.add(new Entry(Material.KNOWLEDGE_BOOK, "/info",
+        entries.add(entry(Material.KNOWLEDGE_BOOK, "/info",
                 ChatColor.GRAY + "Reopens this menu any time."));
+        return entries;
     }
 
     private final PenguinMafiaMarket plugin;
@@ -106,11 +102,13 @@ public class InfoGUI implements Listener {
         }
 
         int slot = 0;
-        for (Entry entry : ENTRIES) {
+        for (GuiConfig.InfoEntry entry : GuiConfig.get().info()) {
             if (slot >= SIZE - 9) break; // leave the bottom row free for the close button
-            ItemStack item = namedItem(entry.icon, ChatColor.AQUA + "" + ChatColor.BOLD + entry.name);
+            ItemStack item = namedItem(entry.icon, ChatColor.AQUA + "" + ChatColor.BOLD + GuiConfig.colorize(entry.name));
             ItemMeta meta = item.getItemMeta();
-            meta.setLore(entry.lore);
+            List<String> lore = new ArrayList<>();
+            for (String line : entry.lore) lore.add(GuiConfig.colorize(line));
+            meta.setLore(lore);
             item.setItemMeta(meta);
             inv.setItem(slot, item);
             slot++;
