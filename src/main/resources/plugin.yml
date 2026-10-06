@@ -1,11 +1,20 @@
 name: PenguinMafiaMarket
-version: 1.42.0
+version: 1.43.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
 description: Player-run Black Market with a real /bm GUI and Frozen Coin currency.
 
 commands:
+  home:
+    description: Open your homes menu (18 slots).
+    usage: /home
+  sethome:
+    description: Save your location as your next available home.
+    usage: /sethome
+  delhome:
+    description: Delete one of your homes.
+    usage: /delhome <number>
   guiedit:
     description: Edit the /info menu and /shop catalog/prices in game.
     usage: |

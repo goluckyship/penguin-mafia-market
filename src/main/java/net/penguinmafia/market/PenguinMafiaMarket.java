@@ -91,6 +91,11 @@ public final class PenguinMafiaMarket extends JavaPlugin {
         InfoGUI infoGUI = new InfoGUI(this);
         getServer().getPluginManager().registerEvents(infoGUI, this);
         getCommand("info").setExecutor(new InfoCommand(infoGUI));
+        HomeGUI homeGUI = new HomeGUI(new HomeManager(this));
+        getServer().getPluginManager().registerEvents(homeGUI, this);
+        getCommand("home").setExecutor(homeGUI);
+        getCommand("sethome").setExecutor(homeGUI);
+        getCommand("delhome").setExecutor(homeGUI);
         GuiEditor guiEditor = new GuiEditor(this);
         getServer().getPluginManager().registerEvents(guiEditor, this);
         GuiEditCommand guiEditCommand = new GuiEditCommand(infoGUI, shopGUI, guiEditor);
