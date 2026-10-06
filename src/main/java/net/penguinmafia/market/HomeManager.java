@@ -41,7 +41,12 @@ public class HomeManager {
     }
 
     public void set(UUID id, int slot, Location loc) {
+        set(id, slot, loc, null);
+    }
+
+    public void set(UUID id, int slot, Location loc, String name) {
         String p = path(id, slot);
+        config.set(p + ".name", name);
         config.set(p + ".world", loc.getWorld().getName());
         config.set(p + ".x", loc.getX());
         config.set(p + ".y", loc.getY());
@@ -71,6 +76,24 @@ public class HomeManager {
         ConfigurationSection s = config.getConfigurationSection(path(id, slot));
         if (s == null) return null;
         return s.getString("world", "?") + " " + (int) s.getDouble("x") + ", " + (int) s.getDouble("y") + ", " + (int) s.getDouble("z");
+    }
+
+    /** The home's label (e.g. an imported name), or null. */
+    public String name(UUID id, int slot) {
+        return config.getString(path(id, slot) + ".name");
+    }
+
+    /** True if this player already has a home within a block of this spot (used to keep imports idempotent). */
+    public boolean hasNear(UUID id, Location loc) {
+        for (int i = 1; i <= MAX_HOMES; i++) {
+            Location l = get(id, i);
+            if (l != null && l.getWorld().equals(loc.getWorld()) && l.distanceSquared(loc) <= 1.5) return true;
+        }
+        return false;
+    }
+
+    public void saveNow() {
+        save();
     }
 
     private void save() {

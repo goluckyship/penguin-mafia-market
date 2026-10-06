@@ -15,6 +15,20 @@ commands:
   delhome:
     description: Delete one of your homes.
     usage: /delhome <number>
+  homeimport:
+    description: Staff - import homes from another homes plugin (e.g. DonutHomes) into /home.
+    usage: /homeimport [plugin folder name]
+    permission: penguinmafia.homes.import
+    permission-message: You don't have permission to use /homeimport.
+  home:
+    description: Open your homes menu (18 slots).
+    usage: /home
+  sethome:
+    description: Save your location as your next available home.
+    usage: /sethome
+  delhome:
+    description: Delete one of your homes.
+    usage: /delhome <number>
   guiedit:
     description: Edit the /info menu and /shop catalog/prices in game.
     usage: |
@@ -244,4 +258,7 @@ permissions:
     default: op
   penguinmafia.guiedit:
     description: Use /guiedit (edit the /info menu and /shop items and prices in game).
+    default: op
+  penguinmafia.homes.import:
+    description: Use /homeimport to copy homes from another homes plugin.
     default: op

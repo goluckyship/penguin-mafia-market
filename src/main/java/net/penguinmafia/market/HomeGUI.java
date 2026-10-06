@@ -62,7 +62,8 @@ public class HomeGUI implements Listener, CommandExecutor {
         for (int n = 1; n <= HomeManager.MAX_HOMES; n++) {
             String where = homes.describe(id, n);
             if (where != null) {
-                inv.setItem(slotOf(n), named(Material.SOUL_TORCH, ChatColor.AQUA + "" + ChatColor.BOLD + "Home " + n,
+                inv.setItem(slotOf(n), named(Material.SOUL_TORCH, ChatColor.AQUA + "" + ChatColor.BOLD + "Home " + n
+                        + (homes.name(id, n) != null ? ChatColor.WHITE + " - " + homes.name(id, n) : ""),
                         ChatColor.GRAY + where, "",
                         ChatColor.YELLOW + "Left-click: teleport",
                         ChatColor.RED + "Shift-click: delete"));
@@ -117,6 +118,9 @@ public class HomeGUI implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("homeimport")) {
+            return HomeImporter.run(sender, homes, args);
+        }
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Only players have homes.");
             return true;
