@@ -27,10 +27,12 @@ public class GuiEditCommand implements CommandExecutor, TabCompleter {
 
     private final InfoGUI infoGUI;
     private final ShopGUI shopGUI;
+    private final GuiEditor editor;
 
-    public GuiEditCommand(InfoGUI infoGUI, ShopGUI shopGUI) {
+    public GuiEditCommand(InfoGUI infoGUI, ShopGUI shopGUI, GuiEditor editor) {
         this.infoGUI = infoGUI;
         this.shopGUI = shopGUI;
+        this.editor = editor;
     }
 
     @Override
@@ -44,6 +46,15 @@ public class GuiEditCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "editor":
+            case "edit": {
+                if (!(sender instanceof Player player)) return playersOnly(sender);
+                String which = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "";
+                if (which.equals("info")) editor.openInfo(player);
+                else if (which.equals("shop")) editor.openShop(player, 0);
+                else return usage(sender, "/guiedit editor <info|shop>");
+                return true;
+            }
             case "info":
                 return handleInfo(sender, args);
             case "shop":
@@ -264,6 +275,7 @@ public class GuiEditCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         String[] lines = {
+                "/guiedit editor info|shop  - VISUAL editor: move items with your mouse",
                 "/guiedit info list | show <#> | open | reset",
                 "/guiedit info add <icon> <name...>   (use &c-style color codes)",
                 "/guiedit info remove <#> | move <#> <pos> | setname <#> <name...> | seticon <#> <icon>",
@@ -331,8 +343,9 @@ public class GuiEditCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!sender.hasPermission(PERMISSION)) return List.of();
-        if (args.length == 1) return filter(List.of("info", "shop", "help"), args[0]);
+        if (args.length == 1) return filter(List.of("editor", "info", "shop", "help"), args[0]);
         if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("editor")) return filter(List.of("info", "shop"), args[1]);
             return args[0].equalsIgnoreCase("info")
                     ? filter(List.of("list", "show", "open", "add", "remove", "move", "setname", "seticon",
                             "addlore", "setlore", "removelore", "clearlore", "reset"), args[1])

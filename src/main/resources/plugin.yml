@@ -1,5 +1,5 @@
 name: PenguinMafiaMarket
-version: 1.41.0
+version: 1.42.0
 main: net.penguinmafia.market.PenguinMafiaMarket
 api-version: '1.21'
 author: PenguinMafia
@@ -9,6 +9,7 @@ commands:
   guiedit:
     description: Edit the /info menu and /shop catalog/prices in game.
     usage: |
+      /guiedit editor info|shop - visual mouse editor
       /guiedit help - list every editing subcommand
     permission: penguinmafia.guiedit
     permission-message: You don't have permission to use /guiedit.
