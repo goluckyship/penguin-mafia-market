@@ -20,15 +20,6 @@ commands:
     usage: /homeimport [plugin folder name]
     permission: penguinmafia.homes.import
     permission-message: You don't have permission to use /homeimport.
-  home:
-    description: Open your homes menu (18 slots).
-    usage: /home
-  sethome:
-    description: Save your location as your next available home.
-    usage: /sethome
-  delhome:
-    description: Delete one of your homes.
-    usage: /delhome <number>
   guiedit:
     description: Edit the /info menu and /shop catalog/prices in game.
     usage: |
